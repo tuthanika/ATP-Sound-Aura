@@ -29,9 +29,11 @@ import com.cliffracertech.soundaura.preferenceState
 import com.cliffracertech.soundaura.settings.PrefKeys
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
 import java.time.Duration
 import javax.inject.Inject
 
@@ -53,11 +55,10 @@ class MediaControllerViewModel(
     private val messageHandler: MessageHandler,
     private val dataStore: DataStore<Preferences>,
     playlistDao: PlaylistDao,
-    coroutineScope: CoroutineScope?
+    dispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
-    @Inject
-    constructor(
+    @Inject constructor(
         dao: PresetDao,
         navigationState: NavigationState,
         playbackState: PlayerServicePlaybackState,
@@ -66,9 +67,9 @@ class MediaControllerViewModel(
         dataStore: DataStore<Preferences>,
         playlistDao: PlaylistDao,
     ) : this(dao, navigationState, playbackState, activePresetState,
-        messageHandler, dataStore, playlistDao, null)
+             messageHandler, dataStore, playlistDao, Dispatchers.IO)
 
-    private val scope = coroutineScope ?: viewModelScope
+    private val scope = viewModelScope + dispatcher
 
     var shownDialog by mutableStateOf<DialogType?>(null)
     private fun dismissDialog() { shownDialog = null }
@@ -204,7 +205,6 @@ class MediaControllerViewModel(
         }
     }}
 
-    // TODO: Figure out why UI stutters when selecting new preset
     private fun loadPreset(presetName: String) {
         scope.launch {
             activePresetState.setName(presetName)
