@@ -156,7 +156,7 @@ class MediaControllerViewModel(
         }, onClick = { presetName: String -> when {
             activePresetIsModified -> {
                 shownDialog = DialogType.PresetUnsavedChangesWarning(
-                    targetName = presetName,
+                    targetName = activePresetName.orEmpty(),
                     onDismissRequest = ::dismissDialog,
                     onConfirmClick = { saveFirst ->
                         if (saveFirst)
