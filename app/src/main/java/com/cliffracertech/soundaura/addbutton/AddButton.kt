@@ -43,8 +43,10 @@ import com.cliffracertech.soundaura.model.database.Track
 import com.cliffracertech.soundaura.ui.tweenDuration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
 import javax.inject.Inject
 
 /** Return a suitable display name for a file [Uri] (i.e. the file name minus
@@ -67,11 +69,11 @@ fun Uri.getDisplayName(context: Context) =
 @HiltViewModel @SuppressLint("StaticFieldLeak") // The application context is used
 class AddButtonViewModel(
     private val context: Context,
-    coroutineScope: CoroutineScope?,
     private val messageHandler: MessageHandler,
     private val navigationState: NavigationState,
     private val readModifyPresetsUseCase: ReadModifyPresetsUseCase,
     private val addToLibrary: AddToLibraryUseCase,
+    dispatcher: CoroutineDispatcher,
 ): ViewModel() {
     @Inject constructor(
         @ApplicationContext context: Context,
@@ -79,10 +81,10 @@ class AddButtonViewModel(
         navigationState: NavigationState,
         readModifyPresets: ReadModifyPresetsUseCase,
         addToLibrary: AddToLibraryUseCase
-    ): this(context, null, messageHandler, navigationState,
-            readModifyPresets, addToLibrary)
+    ): this(context, messageHandler, navigationState,
+            readModifyPresets, addToLibrary, Dispatchers.IO)
 
-    private val scope = coroutineScope ?: viewModelScope
+    private val scope = viewModelScope + dispatcher
 
     var dialogState by mutableStateOf<AddButtonDialogState?>(null)
         private set
