@@ -6,7 +6,6 @@ package com.cliffracertech.soundaura
 import android.content.Context
 import androidx.core.net.toUri
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -20,57 +19,58 @@ import com.cliffracertech.soundaura.model.MessageHandler
 import com.cliffracertech.soundaura.model.NavigationState
 import com.cliffracertech.soundaura.model.ReadModifyPresetsUseCase
 import com.cliffracertech.soundaura.model.TestPermissionHandler
-import com.cliffracertech.soundaura.model.UriPermissionHandler
 import com.cliffracertech.soundaura.model.Validator
 import com.cliffracertech.soundaura.model.database.PlaylistDao
 import com.cliffracertech.soundaura.model.database.SoundAuraDatabase
 import com.cliffracertech.soundaura.model.database.Track
 import com.google.common.truth.Truth.assertThat
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.*
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class AddButtonViewModelTests {
-    private lateinit var context: Context
-    private lateinit var permissionHandler: UriPermissionHandler
-    private lateinit var coroutineScope: CoroutineScope
+    private val context = ApplicationProvider.getApplicationContext<Context>()
+    private val dispatcher = UnconfinedTestDispatcher()
+    private val scope = TestScope(dispatcher)
+    @get:Rule val tempFolder: TemporaryFolder =
+        TemporaryFolder.builder().assureDeletion().build()
     private lateinit var navigationState: NavigationState
     private lateinit var db: SoundAuraDatabase
     private lateinit var playlistDao: PlaylistDao
     private lateinit var instance: AddButtonViewModel
 
     @Before fun init() {
-        context = ApplicationProvider.getApplicationContext()
-        permissionHandler = TestPermissionHandler()
-        coroutineScope = TestCoroutineScope()
-        navigationState = NavigationState()
-        db = Room.inMemoryDatabaseBuilder(context, SoundAuraDatabase::class.java).build()
-        playlistDao = db.playlistDao()
-
-        val dataStore = PreferenceDataStoreFactory.create(scope = coroutineScope) {
-            context.preferencesDataStoreFile("testDatastore")
-        }
-        val addToLibraryUseCase = AddToLibraryUseCase(permissionHandler, playlistDao)
-        
-        val activePresetState = ActivePresetState(dataStore, db.presetDao())
         val messageHandler = MessageHandler()
+        navigationState = NavigationState()
+
+        db = Room.inMemoryDatabaseBuilder(context, SoundAuraDatabase::class.java).build()
+        val dataStore = PreferenceDataStoreFactory.create(scope = scope.backgroundScope) {
+            tempFolder.newFile("test.preferences_pb")
+        }
+        val activePresetState = ActivePresetState(dataStore, db.presetDao())
+
+        playlistDao = db.playlistDao()
         val readModifyPresetsUseCase = ReadModifyPresetsUseCase(
             messageHandler, activePresetState, db.presetDao(), playlistDao)
+        val addToLibraryUseCase = AddToLibraryUseCase(TestPermissionHandler(), playlistDao)
         
         instance = AddButtonViewModel(
-            context, coroutineScope, messageHandler, navigationState,
-            readModifyPresetsUseCase, addToLibraryUseCase)
+            context, messageHandler, navigationState,
+            readModifyPresetsUseCase, addToLibraryUseCase,
+            dispatcher)
     }
 
     @After fun clean_up() {
-        db.close()
-        coroutineScope.cancel()
+        scope.cancel()
     }
 
     private val testUris = List(3) { "uri $it".toUri() }
@@ -238,7 +238,6 @@ class AddButtonViewModelTests {
     @Test fun validating_track_names() = runTest {
         val existingTrackName = "existing track name"
         playlistDao.insertPlaylist(existingTrackName, false, testTracks)
-        advanceUntilIdle()
 
         goto_name_tracks_step_with_multiple_files()
         assertThat(nameTracksStep.errorIndices).isEmpty()
@@ -246,37 +245,31 @@ class AddButtonViewModelTests {
 
         // Check for name already used error
         nameTracksStep.onNameChange(0, existingTrackName)
-        advanceUntilIdle()
         assertThat(nameTracksStep.errorIndices).containsExactly(0)
         assertThat(nameTracksStep.message).isInstanceOf(Validator.Message.Error::class)
 
         // Check that error changes back to false when name is changed
         nameTracksStep.onNameChange(0, "new name")
-        advanceUntilIdle()
         assertThat(nameTracksStep.message).isNull()
         assertThat(nameTracksStep.errorIndices).isEmpty()
 
         // Check that both track names are invalid when they match
         nameTracksStep.onNameChange(1, "new name")
-        advanceUntilIdle()
         assertThat(nameTracksStep.errorIndices).containsExactly(0, 1)
         assertThat(nameTracksStep.message).isInstanceOf(Validator.Message.Error::class)
 
         // Check that error changes back to false when names no longer match
         nameTracksStep.onNameChange(1, "new name 2")
-        advanceUntilIdle()
         assertThat(nameTracksStep.errorIndices).isEmpty()
         assertThat(nameTracksStep.message).isNull()
 
         // Check for blank name error
         nameTracksStep.onNameChange(2, "")
-        advanceUntilIdle()
         assertThat(nameTracksStep.errorIndices).containsExactly(2)
         assertThat(nameTracksStep.message).isInstanceOf(Validator.Message.Error::class)
 
         // Check that error changes back to false when name is no longer blank
         nameTracksStep.onNameChange(2, "non-blank name")
-        advanceUntilIdle()
         assertThat(nameTracksStep.errorIndices).isEmpty()
         assertThat(nameTracksStep.message).isNull()
     }
@@ -284,7 +277,6 @@ class AddButtonViewModelTests {
     @Test fun validating_playlist_names() = runTest {
         val playlistName = testUris.first().getDisplayName(context) + " playlist"
         playlistDao.insertPlaylist(playlistName, false, testTracks)
-        waitUntil { playlistDao.getPlaylistNames().isNotEmpty() }
 
         goto_name_playlist_step()
         waitUntil { namePlaylistStep.message != null }
@@ -295,7 +287,6 @@ class AddButtonViewModelTests {
         assertThat(namePlaylistStep.message).isNull()
 
         namePlaylistStep.onNameChange("")
-        waitUntil { namePlaylistStep.message != null }
         assertThat(namePlaylistStep.message).isInstanceOf(Validator.Message.Error::class)
     }
 
@@ -308,7 +299,6 @@ class AddButtonViewModelTests {
         waitUntil { instance.dialogState == null } // advanceUntilIdle doesn't work here for some reason
         assertThat(instance.dialogState).isNull()
 
-        advanceUntilIdle()
         val names = playlistDao.getPlaylistNames()
         val expectedNames = listOf(
             testUris[0].getDisplayName(context),
@@ -352,7 +342,6 @@ class AddButtonViewModelTests {
         waitUntil { instance.dialogState == null }
         assertThat(instance.dialogState).isNull()
 
-        waitUntil { playlistDao.getPlaylistNames().size == 2 }
         playlists = playlistDao.getPlaylistsSortedByOrderAdded().first()
         assertThat(playlists.map(Playlist::name)).containsExactly(name1, name2)
         assertThat(playlistDao.getPlaylistShuffle(playlists[1].id)).isTrue()
