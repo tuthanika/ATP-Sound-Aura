@@ -38,7 +38,6 @@ import com.cliffracertech.soundaura.collectAsState
 import com.cliffracertech.soundaura.model.MessageHandler
 import com.cliffracertech.soundaura.model.ModifyLibraryUseCase
 import com.cliffracertech.soundaura.model.PlaybackState
-import com.cliffracertech.soundaura.model.PlayerServicePlaybackState
 import com.cliffracertech.soundaura.model.ReadLibraryUseCase
 import com.cliffracertech.soundaura.model.SearchQueryState
 import com.cliffracertech.soundaura.model.StringResource
@@ -47,8 +46,9 @@ import com.cliffracertech.soundaura.screenSizeBasedHorizontalPadding
 import com.cliffracertech.soundaura.ui.tweenDuration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
 import javax.inject.Inject
 
 /** LibraryState's subtypes, [Loading], [Empty], and [Content], represent
@@ -139,25 +139,15 @@ sealed class LibraryState {
  * of any dialogs that should be shown are provided via the property
  * [shownDialog].
  */
-@HiltViewModel class LibraryViewModel(
+@HiltViewModel class LibraryViewModel @Inject constructor(
     readLibrary: ReadLibraryUseCase,
     private val modifyLibrary: ModifyLibraryUseCase,
     private val searchQueryState: SearchQueryState,
     private val messageHandler: MessageHandler,
-    private val playbackState: PlaybackState,
-    coroutineScope: CoroutineScope? = null
+    playbackState: PlaybackState,
+    dispatcher: CoroutineDispatcher
 ) : ViewModel() {
-
-    @Inject constructor(
-        readLibraryUseCase: ReadLibraryUseCase,
-        modifyLibraryUseCase: ModifyLibraryUseCase,
-        searchQueryState: SearchQueryState,
-        messageHandler: MessageHandler,
-        playbackState: PlayerServicePlaybackState,
-    ) : this(readLibraryUseCase, modifyLibraryUseCase,
-             searchQueryState, messageHandler, playbackState, null)
-
-    private val scope = coroutineScope ?: viewModelScope
+    private val scope = viewModelScope + dispatcher
 
     var shownDialog by mutableStateOf<PlaylistDialog?>(null)
     private fun dismissDialog() { shownDialog = null }

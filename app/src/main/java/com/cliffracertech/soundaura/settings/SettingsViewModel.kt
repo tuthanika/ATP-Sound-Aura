@@ -32,8 +32,9 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -42,8 +43,7 @@ val Context.dataStore by preferencesDataStore(name = "settings")
 @Module @InstallIn(SingletonComponent::class)
 class PreferencesModule {
     @Singleton @Provides
-    fun provideDatastore(@ApplicationContext app: Context) =
-        app.dataStore
+    fun provideDatastore(@ApplicationContext app: Context) = app.dataStore
 }
 
 object PrefKeys {
@@ -168,18 +168,12 @@ enum class OnZeroVolumeAudioDeviceBehavior {
 }
 
 @HiltViewModel
-class SettingsViewModel(
-    context: Context,
+class SettingsViewModel @Inject constructor(
+    @ApplicationContext context: Context,
     private val dataStore: DataStore<Preferences>,
-    coroutineScope: CoroutineScope? = null
+    dispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-
-    @Inject constructor(
-        @ApplicationContext context: Context,
-        dataStore: DataStore<Preferences>,
-    ) : this(context, dataStore, null)
-
-    private val scope = coroutineScope ?: viewModelScope
+    private val scope = viewModelScope + dispatcher
     private val appThemeKey = intPreferencesKey(PrefKeys.appTheme)
     private val playInBackgroundKey = booleanPreferencesKey(PrefKeys.playInBackground)
     private val notificationPermissionRequestedKey =

@@ -19,7 +19,6 @@ import com.cliffracertech.soundaura.model.ActivePresetState
 import com.cliffracertech.soundaura.model.MessageHandler
 import com.cliffracertech.soundaura.model.NavigationState
 import com.cliffracertech.soundaura.model.PlaybackState
-import com.cliffracertech.soundaura.model.PlayerServicePlaybackState
 import com.cliffracertech.soundaura.model.StringResource
 import com.cliffracertech.soundaura.model.database.PlaylistDao
 import com.cliffracertech.soundaura.model.database.Preset
@@ -30,7 +29,6 @@ import com.cliffracertech.soundaura.settings.PrefKeys
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
@@ -47,7 +45,7 @@ import javax.inject.Inject
  * reflects [shownDialog]'s type (i.e. one of the subclasses of [DialogType]).
  */
 @HiltViewModel
-class MediaControllerViewModel(
+class MediaControllerViewModel @Inject constructor(
     private val presetDao: PresetDao,
     private val navigationState: NavigationState,
     private val playbackState: PlaybackState,
@@ -57,18 +55,6 @@ class MediaControllerViewModel(
     playlistDao: PlaylistDao,
     dispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-
-    @Inject constructor(
-        dao: PresetDao,
-        navigationState: NavigationState,
-        playbackState: PlayerServicePlaybackState,
-        activePresetState: ActivePresetState,
-        messageHandler: MessageHandler,
-        dataStore: DataStore<Preferences>,
-        playlistDao: PlaylistDao,
-    ) : this(dao, navigationState, playbackState, activePresetState,
-             messageHandler, dataStore, playlistDao, Dispatchers.IO)
-
     private val scope = viewModelScope + dispatcher
 
     var shownDialog by mutableStateOf<DialogType?>(null)

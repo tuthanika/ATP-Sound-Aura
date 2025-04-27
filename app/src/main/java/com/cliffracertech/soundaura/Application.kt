@@ -8,7 +8,13 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import com.cliffracertech.soundaura.service.PlayerService
 import com.cliffracertech.soundaura.service.TogglePlaybackTileService
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
 import dagger.hilt.android.HiltAndroidApp
+import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.Dispatchers
+import javax.inject.Singleton
 
 @HiltAndroidApp
 class SoundAuraApplication : android.app.Application() {
@@ -27,6 +33,12 @@ class SoundAuraApplication : android.app.Application() {
             else startService(PlayerService.stopIntent(this))
         }
     }
+}
+
+@Module @InstallIn(SingletonComponent::class)
+class DispatcherModule {
+    @Singleton @Provides
+    fun dispatcherProvider() = Dispatchers.IO
 }
 
 fun logd(message: String) = Log.d("SoundAuraTag", message)

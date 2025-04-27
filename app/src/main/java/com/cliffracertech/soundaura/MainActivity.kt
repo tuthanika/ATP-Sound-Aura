@@ -9,15 +9,33 @@ import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.*
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.SnackbarHost
+import androidx.compose.material.SnackbarHostState
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionContext
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
@@ -48,26 +66,19 @@ import com.cliffracertech.soundaura.ui.tweenDuration
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.plus
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
-@HiltViewModel class MainActivityViewModel(
+@HiltViewModel class MainActivityViewModel @Inject constructor(
     messageHandler: MessageHandler,
     private val dataStore: DataStore<Preferences>,
     private val navigationState: NavigationState,
     private val playbackState: PlayerServicePlaybackState,
-    coroutineScope: CoroutineScope?
+    dispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-
-    @Inject constructor(
-        messageHandler: MessageHandler,
-        dataStore: DataStore<Preferences>,
-        navigationState: NavigationState,
-        playbackState: PlayerServicePlaybackState
-    ) : this(messageHandler, dataStore, navigationState, playbackState, null)
-
-    private val scope = coroutineScope ?: viewModelScope
+    private val scope = viewModelScope + dispatcher
 
     val messages = messageHandler.messages
     val showingAppSettings get() = navigationState.showingAppSettings

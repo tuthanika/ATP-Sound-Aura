@@ -44,7 +44,6 @@ import com.cliffracertech.soundaura.ui.tweenDuration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import javax.inject.Inject
@@ -67,23 +66,14 @@ fun Uri.getDisplayName(context: Context) =
  * value of the [dialogState] property.
  */
 @HiltViewModel @SuppressLint("StaticFieldLeak") // The application context is used
-class AddButtonViewModel(
-    private val context: Context,
+class AddButtonViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val messageHandler: MessageHandler,
     private val navigationState: NavigationState,
     private val readModifyPresetsUseCase: ReadModifyPresetsUseCase,
     private val addToLibrary: AddToLibraryUseCase,
     dispatcher: CoroutineDispatcher,
 ): ViewModel() {
-    @Inject constructor(
-        @ApplicationContext context: Context,
-        messageHandler: MessageHandler,
-        navigationState: NavigationState,
-        readModifyPresets: ReadModifyPresetsUseCase,
-        addToLibrary: AddToLibraryUseCase
-    ): this(context, messageHandler, navigationState,
-            readModifyPresets, addToLibrary, Dispatchers.IO)
-
     private val scope = viewModelScope + dispatcher
 
     var dialogState by mutableStateOf<AddButtonDialogState?>(null)

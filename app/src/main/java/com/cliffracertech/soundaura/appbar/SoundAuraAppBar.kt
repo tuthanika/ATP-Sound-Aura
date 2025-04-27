@@ -38,7 +38,8 @@ import com.cliffracertech.soundaura.settings.PrefKeys
 import com.cliffracertech.soundaura.ui.SimpleIconButton
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.plus
 import javax.inject.Inject
 
 /**
@@ -53,20 +54,13 @@ import javax.inject.Inject
  * [ListAppBar.otherIconButtons] parameter should contain a settings icon
  * button that uses the property [onSettingsButtonClick] as its onClick action.
  */
-@HiltViewModel class AppBarViewModel(
+@HiltViewModel class AppBarViewModel @Inject constructor(
     private val dataStore: DataStore<Preferences>,
     private val navigationState: NavigationState,
     private val searchQuery: SearchQueryState,
-    coroutineScope: CoroutineScope? = null
+    dispatcher: CoroutineDispatcher
 ) : ViewModel() {
-
-    @Inject constructor(
-        dataStore: DataStore<Preferences>,
-        navigationState: NavigationState,
-        searchQueryState: SearchQueryState
-    ) : this(dataStore, navigationState, searchQueryState, null)
-
-    private val scope = coroutineScope ?: viewModelScope
+    private val scope = viewModelScope + dispatcher
 
     val onBackButtonClick: (() -> Unit)? get() = when {
         searchQuery.isActive ->
