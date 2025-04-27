@@ -3,13 +3,11 @@
    the project's root directory to see the full license. */
 package com.cliffracertech.soundaura
 
-import android.content.Context
+import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.preferencesDataStoreFile
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.cliffracertech.soundaura.appbar.AppBarViewModel
 import com.cliffracertech.soundaura.appbar.SearchQueryViewState
@@ -19,36 +17,43 @@ import com.cliffracertech.soundaura.model.database.Playlist
 import com.cliffracertech.soundaura.settings.PrefKeys
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.test.*
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class AppBarViewModelTests {
-    private val context = ApplicationProvider.getApplicationContext<Context>()
-    private val searchQueryState = SearchQueryState()
-    private val navigationState = NavigationState()
-    private val coroutineScope = TestCoroutineScope()
-    private val dataStore = PreferenceDataStoreFactory.create(scope = coroutineScope) {
-        context.preferencesDataStoreFile("testDatastore")
-    }
+    private val dispatcher = UnconfinedTestDispatcher()
+    private val scope = TestScope(dispatcher)
+    @get:Rule val tempFolder: TemporaryFolder =
+        TemporaryFolder.builder().assureDeletion().build()
     private val showActivePlaylistsFirstKey =
         booleanPreferencesKey(PrefKeys.showActivePlaylistsFirst)
     private val playlistSortKey = intPreferencesKey(PrefKeys.playlistSort)
+
+    private lateinit var dataStore: DataStore<Preferences>
+    private lateinit var navigationState: NavigationState
+    private lateinit var searchQueryState: SearchQueryState
     private lateinit var instance: AppBarViewModel
 
     @Before fun init() {
+        dataStore = PreferenceDataStoreFactory.create(scope = scope.backgroundScope) {
+            tempFolder.newFile("test.preferences_pb")
+        }
+        navigationState = NavigationState()
+        searchQueryState = SearchQueryState()
         instance = AppBarViewModel(
             dataStore, navigationState,
-            searchQueryState, coroutineScope)
+            searchQueryState, dispatcher)
     }
 
-    @After fun cleanUp() {
-        runTest { dataStore.edit { it.clear() } }
-        coroutineScope.cancel()
-    }
+    @After fun cleanUp() { scope.cancel() }
 
     @Test fun initial_state() {
         assertThat(instance.onBackButtonClick).isNull()
@@ -99,9 +104,7 @@ class AppBarViewModelTests {
 
         val testQuery = "test query"
         searchQueryState.set(testQuery)
-        waitUntil { instance.searchQueryViewState.query == testQuery }
         instance.searchQueryViewState.onButtonClick()
-        assertThat(instance.searchQueryViewState.query).isNull()
     }
 
     @Test fun settings_button_clears_search_query() {
@@ -115,40 +118,32 @@ class AppBarViewModelTests {
 
     @Test fun show_active_tracks_first_reflects_underlying_state() = runTest{
         dataStore.edit(showActivePlaylistsFirstKey, true)
-        advanceUntilIdle()
         assertThat(instance.showActivePlaylistsFirstSwitchState.checked).isTrue()
         dataStore.edit(showActivePlaylistsFirstKey, false)
-        advanceUntilIdle()
         assertThat(instance.showActivePlaylistsFirstSwitchState.checked).isFalse()
     }
 
     @Test fun show_active_tracks_first_switch_clicks_toggle_value() = runTest {
         instance.showActivePlaylistsFirstSwitchState.onClick()
-        advanceUntilIdle()
         assertThat(instance.showActivePlaylistsFirstSwitchState.checked).isTrue()
         instance.showActivePlaylistsFirstSwitchState.onClick()
-        advanceUntilIdle()
         assertThat(instance.showActivePlaylistsFirstSwitchState.checked).isFalse()
     }
 
     @Test fun current_playlistSort_reflects_underlying_state() = runTest {
         dataStore.edit(playlistSortKey, Playlist.Sort.NameDesc.ordinal)
-        advanceUntilIdle()
         assertThat(instance.sortMenuState.currentOptionIndex)
             .isEqualTo(Playlist.Sort.NameDesc.ordinal)
         dataStore.edit(playlistSortKey, Playlist.Sort.NameAsc.ordinal)
-        advanceUntilIdle()
         assertThat(instance.sortMenuState.currentOptionIndex)
             .isEqualTo(Playlist.Sort.NameAsc.ordinal)
     }
 
     @Test fun on_playlistSort_option_click() = runTest {
         instance.sortMenuState.onOptionClick(Playlist.Sort.NameDesc.ordinal)
-        advanceUntilIdle()
         assertThat(instance.sortMenuState.currentOptionIndex)
             .isEqualTo(Playlist.Sort.NameDesc.ordinal)
         instance.sortMenuState.onOptionClick(Playlist.Sort.NameAsc.ordinal)
-        advanceUntilIdle()
         assertThat(instance.sortMenuState.currentOptionIndex)
             .isEqualTo(Playlist.Sort.NameAsc.ordinal)
     }

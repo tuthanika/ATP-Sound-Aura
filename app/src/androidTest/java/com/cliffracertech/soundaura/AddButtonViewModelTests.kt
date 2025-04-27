@@ -69,9 +69,7 @@ class AddButtonViewModelTests {
             dispatcher)
     }
 
-    @After fun clean_up() {
-        scope.cancel()
-    }
+    @After fun clean_up() { scope.cancel() }
 
     private val testUris = List(3) { "uri $it".toUri() }
     private suspend fun PlaylistDao.getPlaylistUris(id: Long) = getPlaylistTracks(id).map(Track::uri)
