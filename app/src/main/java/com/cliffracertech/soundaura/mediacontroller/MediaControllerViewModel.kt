@@ -12,9 +12,11 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cliffracertech.soundaura.Dispatcher
 import com.cliffracertech.soundaura.R
 import com.cliffracertech.soundaura.collectAsState
 import com.cliffracertech.soundaura.edit
+import com.cliffracertech.soundaura.launchIO
 import com.cliffracertech.soundaura.model.ActivePresetState
 import com.cliffracertech.soundaura.model.MessageHandler
 import com.cliffracertech.soundaura.model.NavigationState
@@ -28,10 +30,9 @@ import com.cliffracertech.soundaura.preferenceState
 import com.cliffracertech.soundaura.settings.PrefKeys
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
+import kotlinx.coroutines.withContext
 import java.time.Duration
 import javax.inject.Inject
 
@@ -53,9 +54,8 @@ class MediaControllerViewModel @Inject constructor(
     private val messageHandler: MessageHandler,
     private val dataStore: DataStore<Preferences>,
     playlistDao: PlaylistDao,
-    dispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-    private val scope = viewModelScope + dispatcher
+    private val scope = viewModelScope + Dispatcher.Immediate
 
     var shownDialog by mutableStateOf<DialogType?>(null)
     private fun dismissDialog() { shownDialog = null }
@@ -113,7 +113,9 @@ class MediaControllerViewModel @Inject constructor(
                 onNameValidated = { validatedName ->
                     dismissDialog()
                     if (validatedName != presetName) {
-                        presetDao.renamePreset(presetName, validatedName)
+                        withContext(Dispatcher.IO) {
+                            presetDao.renamePreset(presetName, validatedName)
+                        }
                         if (activePresetName == presetName)
                             activePresetState.setName(validatedName)
                     }
@@ -133,7 +135,7 @@ class MediaControllerViewModel @Inject constructor(
                 text = StringResource(R.string.confirm_delete_preset_message),
                 onDismissRequest = ::dismissDialog,
                 onConfirmClick = {
-                    scope.launch {
+                    scope.launchIO {
                         if (presetName == activePresetName)
                             activePresetState.clear()
                         presetDao.deletePreset(presetName)
@@ -180,22 +182,22 @@ class MediaControllerViewModel @Inject constructor(
             messageHandler.postMessage(R.string.overwrite_no_active_playlists_error_message)
         presetName == activePresetName && !activePresetIsModified -> {
             // This prevents a pointless saving of the unmodified active preset
-        } else -> scope.launch {
+        } else -> scope.launchIO {
             presetDao.savePreset(presetName)
             // Since the current sound mix is being saved to the preset
             // whose name == presetName, we want to make it the active
             // preset if it isn't currently.
             if (presetName != activePresetName)
                 activePresetState.setName(presetName)
-            navigationState.hidePresetSelector()
+            withContext(Dispatcher.Immediate) { navigationState.hidePresetSelector() }
         }
     }}
 
     private fun loadPreset(presetName: String) {
-        scope.launch {
+        scope.launchIO {
             activePresetState.setName(presetName)
             presetDao.loadPreset(presetName)
-            navigationState.hidePresetSelector()
+            withContext(Dispatcher.Immediate) { navigationState.hidePresetSelector() }
         }
     }
 }

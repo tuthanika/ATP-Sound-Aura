@@ -18,10 +18,12 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cliffracertech.soundaura.Dispatcher
 import com.cliffracertech.soundaura.R
 import com.cliffracertech.soundaura.collectAsState
 import com.cliffracertech.soundaura.edit
 import com.cliffracertech.soundaura.enumPreferenceState
+import com.cliffracertech.soundaura.launchIO
 import com.cliffracertech.soundaura.model.database.Playlist
 import com.cliffracertech.soundaura.preferenceFlow
 import com.cliffracertech.soundaura.preferenceState
@@ -32,7 +34,6 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import javax.inject.Inject
@@ -171,9 +172,8 @@ enum class OnZeroVolumeAudioDeviceBehavior {
 class SettingsViewModel @Inject constructor(
     @ApplicationContext context: Context,
     private val dataStore: DataStore<Preferences>,
-    dispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-    private val scope = viewModelScope + dispatcher
+    private val scope = viewModelScope + Dispatcher.Immediate
     private val appThemeKey = intPreferencesKey(PrefKeys.appTheme)
     private val playInBackgroundKey = booleanPreferencesKey(PrefKeys.playInBackground)
     private val notificationPermissionRequestedKey =
@@ -236,8 +236,8 @@ class SettingsViewModel @Inject constructor(
             !notificationPermissionRequested &&
             !hasNotificationPermission
         ) {
-            scope.launch {
-                dataStore.edit{ it[notificationPermissionRequestedKey] = true }
+            scope.launchIO {
+                dataStore.edit(notificationPermissionRequestedKey, true)
             }
             showingNotificationPermissionDialog = true
         }

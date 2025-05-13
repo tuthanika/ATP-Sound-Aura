@@ -13,12 +13,14 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
+import com.cliffracertech.soundaura.Dispatcher
 import com.cliffracertech.soundaura.R
+import com.cliffracertech.soundaura.launchIO
 import com.cliffracertech.soundaura.model.ListValidator
 import com.cliffracertech.soundaura.model.StringResource
 import com.cliffracertech.soundaura.model.Validator
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Entity(tableName = "track")
 data class Track(
@@ -101,7 +103,7 @@ class TrackNamesValidator(
 
     private var existingNames: Set<String>? = null
     init {
-        coroutineScope.launch {
+        coroutineScope.launchIO {
             existingNames = playlistDao.getPlaylistNames().toSet()
         }
     }
@@ -155,7 +157,7 @@ fun newPlaylistNameValidator(
     messageFor = { name, hasBeenChanged -> when {
         name.isBlank() && hasBeenChanged ->
             Validator.Message.Error(R.string.name_dialog_blank_name_error_message)
-        dao.exists(name) ->
+        withContext(Dispatcher.IO) { dao.exists(name) } ->
             Validator.Message.Error(R.string.name_dialog_duplicate_name_error_message)
         else -> null
     }})
@@ -177,7 +179,9 @@ fun playlistRenameValidator(
     coroutineScope = coroutineScope,
     messageFor = { name, _ -> when {
         name == oldName ->  null
-        name.isBlank() ->   Validator.Message.Error(R.string.name_dialog_blank_name_error_message)
-        dao.exists(name) -> Validator.Message.Error(R.string.name_dialog_duplicate_name_error_message)
-        else ->             null
+        name.isBlank() ->
+            Validator.Message.Error(R.string.name_dialog_blank_name_error_message)
+        withContext(Dispatcher.IO) { dao.exists(name) } ->
+            Validator.Message.Error(R.string.name_dialog_duplicate_name_error_message)
+        else -> null
     }})

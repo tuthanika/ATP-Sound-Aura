@@ -26,6 +26,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.cliffracertech.soundaura.Dispatcher
 import com.cliffracertech.soundaura.R
 import com.cliffracertech.soundaura.edit
 import com.cliffracertech.soundaura.enumPreferenceState
@@ -38,7 +39,6 @@ import com.cliffracertech.soundaura.settings.PrefKeys
 import com.cliffracertech.soundaura.ui.SimpleIconButton
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.plus
 import javax.inject.Inject
 
@@ -57,10 +57,9 @@ import javax.inject.Inject
 @HiltViewModel class AppBarViewModel @Inject constructor(
     private val dataStore: DataStore<Preferences>,
     private val navigationState: NavigationState,
-    private val searchQuery: SearchQueryState,
-    dispatcher: CoroutineDispatcher
+    private val searchQuery: SearchQueryState
 ) : ViewModel() {
-    private val scope = viewModelScope + dispatcher
+    private val scope = viewModelScope + Dispatcher.Immediate
 
     val onBackButtonClick: (() -> Unit)? get() = when {
         searchQuery.isActive ->

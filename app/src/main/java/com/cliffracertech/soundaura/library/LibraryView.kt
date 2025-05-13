@@ -33,8 +33,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.cliffracertech.soundaura.Dispatcher
 import com.cliffracertech.soundaura.R
 import com.cliffracertech.soundaura.collectAsState
+import com.cliffracertech.soundaura.launchIO
 import com.cliffracertech.soundaura.model.MessageHandler
 import com.cliffracertech.soundaura.model.ModifyLibraryUseCase
 import com.cliffracertech.soundaura.model.PlaybackState
@@ -46,9 +48,9 @@ import com.cliffracertech.soundaura.screenSizeBasedHorizontalPadding
 import com.cliffracertech.soundaura.ui.tweenDuration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /** LibraryState's subtypes, [Loading], [Empty], and [Content], represent
@@ -145,22 +147,21 @@ sealed class LibraryState {
     private val searchQueryState: SearchQueryState,
     private val messageHandler: MessageHandler,
     playbackState: PlaybackState,
-    dispatcher: CoroutineDispatcher
 ) : ViewModel() {
-    private val scope = viewModelScope + dispatcher
+    private val scope = viewModelScope + Dispatcher.Immediate
 
     var shownDialog by mutableStateOf<PlaylistDialog?>(null)
     private fun dismissDialog() { shownDialog = null }
 
     private val itemCallback = object : PlaylistViewCallback {
         override fun onAddRemoveButtonClick(playlist: Playlist) {
-            scope.launch { modifyLibrary.togglePlaylistIsActive(playlist.id) }
+            scope.launchIO { modifyLibrary.togglePlaylistIsActive(playlist.id) }
         }
         override fun onVolumeChange(playlist: Playlist, volume: Float) {
             playbackState.setPlaylistVolume(playlist.id, volume)
         }
         override fun onVolumeChangeFinished(playlist: Playlist, volume: Float) {
-            scope.launch { modifyLibrary.setPlaylistVolume(playlist.id, volume) }
+            scope.launchIO { modifyLibrary.setPlaylistVolume(playlist.id, volume) }
         }
         override fun onRenameClick(playlist: Playlist) {
             shownDialog = PlaylistDialog.Rename(
@@ -174,9 +175,11 @@ sealed class LibraryState {
                 val existingTracks = readLibrary.getPlaylistTracks(playlist.id)
                 val shuffleEnabled = readLibrary.getPlaylistShuffle(playlist.id)
                 assert((existingTracks.size == 1) == playlist.isSingleTrack)
-                if (playlist.isSingleTrack)
-                    showFileChooser(playlist, existingTracks)
-                else showPlaylistOptions(playlist, existingTracks, shuffleEnabled)
+                withContext(Dispatcher.Immediate) {
+                    if (playlist.isSingleTrack)
+                        showFileChooser(playlist, existingTracks)
+                    else showPlaylistOptions(playlist, existingTracks, shuffleEnabled)
+                }
             }
         }
         override fun onVolumeBoostClick(playlist: Playlist) {
@@ -185,20 +188,20 @@ sealed class LibraryState {
                 onDismissRequest = ::dismissDialog,
                 onConfirm = { volumeBoostDb ->
                     dismissDialog()
-                    scope.launch {
+                    scope.launchIO {
                         modifyLibrary.setPlaylistVolumeBoostDb(playlist.id, volumeBoostDb)
                     }
                 })
         }
         override fun onRemoveClick(playlist: Playlist) {
             if (playlist.hasError)
-                scope.launch { modifyLibrary.removePlaylist(playlist.id) }
+                scope.launchIO { modifyLibrary.removePlaylist(playlist.id) }
             else shownDialog = PlaylistDialog.Remove(
                 target = playlist,
                 onDismissRequest = ::dismissDialog,
                 onConfirmClick = {
                     dismissDialog()
-                    scope.launch { modifyLibrary.removePlaylist(playlist.id) }
+                    scope.launchIO { modifyLibrary.removePlaylist(playlist.id) }
                 })
         }
     }
@@ -252,7 +255,7 @@ sealed class LibraryState {
                 showFileChooser(target, existingTracks, shuffleEnabled)
             }, onConfirm = { newShuffle, newTrackList ->
                 dismissDialog()
-                scope.launch {
+                scope.launchIO {
                     modifyLibrary.setPlaylistShuffleAndTracks(
                         target.id, newShuffle, newTrackList)
                 }

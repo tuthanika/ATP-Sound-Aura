@@ -66,7 +66,6 @@ import com.cliffracertech.soundaura.ui.tweenDuration
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
@@ -76,10 +75,8 @@ import javax.inject.Inject
     private val dataStore: DataStore<Preferences>,
     private val navigationState: NavigationState,
     private val playbackState: PlayerServicePlaybackState,
-    dispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-    private val scope = viewModelScope + dispatcher
-
+    private val scope = viewModelScope + Dispatcher.Immediate
     val messages = messageHandler.messages
     val showingAppSettings get() = navigationState.showingAppSettings
     val showingPresetSelector get() = navigationState.mediaControllerState.isExpanded

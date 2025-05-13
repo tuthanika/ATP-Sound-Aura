@@ -32,8 +32,10 @@ import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.cliffracertech.soundaura.Dispatcher
 import com.cliffracertech.soundaura.R
 import com.cliffracertech.soundaura.dialog.ValidatedNamingState
+import com.cliffracertech.soundaura.launchIO
 import com.cliffracertech.soundaura.model.AddToLibraryUseCase
 import com.cliffracertech.soundaura.model.MessageHandler
 import com.cliffracertech.soundaura.model.NavigationState
@@ -43,9 +45,9 @@ import com.cliffracertech.soundaura.model.database.Track
 import com.cliffracertech.soundaura.ui.tweenDuration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /** Return a suitable display name for a file [Uri] (i.e. the file name minus
@@ -72,9 +74,8 @@ class AddButtonViewModel @Inject constructor(
     private val navigationState: NavigationState,
     private val readModifyPresetsUseCase: ReadModifyPresetsUseCase,
     private val addToLibrary: AddToLibraryUseCase,
-    dispatcher: CoroutineDispatcher,
 ): ViewModel() {
-    private val scope = viewModelScope + dispatcher
+    private val scope = viewModelScope + Dispatcher.Immediate
 
     var dialogState by mutableStateOf<AddButtonDialogState?>(null)
         private set
@@ -87,7 +88,6 @@ class AddButtonViewModel @Inject constructor(
             R.string.add_preset_button_description
         else -> R.string.add_local_files_button_description
     }
-
 
     val onClick: () -> Unit = { when {
         navigationState.showingAppSettings -> {}
@@ -201,7 +201,9 @@ class AddButtonViewModel @Inject constructor(
     ) {
         scope.launch {
             assert(trackUris.size == trackNames.size)
-            when (val result = addToLibrary.addSingleTrackPlaylists(trackNames, trackUris)) {
+            when (val result = withContext(Dispatcher.IO) {
+                addToLibrary.addSingleTrackPlaylists(trackNames, trackUris)
+            }) {
                 is AddToLibraryUseCase.Result.Success ->
                     hideDialog()
                 is AddToLibraryUseCase.Result.Failure ->
@@ -210,7 +212,7 @@ class AddButtonViewModel @Inject constructor(
                         permissionsUsed = result.permissionsUsed,
                         permissionsAllowed = result.permissionAllowance,
                     ) { permissionGranted: Boolean ->
-                        if (permissionGranted) scope.launch {
+                        if (permissionGranted) scope.launchIO {
                             addToLibrary.addSingleTrackPlaylists(trackNames, trackUris)
                         } else messageHandler.postMessage(
                             stringResource = StringResource(R.string.cant_add_tracks_warning),
@@ -228,7 +230,9 @@ class AddButtonViewModel @Inject constructor(
         tracks: List<Track>,
     ) {
         scope.launch {
-            when (val result = addToLibrary.addPlaylist(playlistName, shuffle, tracks, uris)) {
+            when (val result = withContext(Dispatcher.IO) {
+                addToLibrary.addPlaylist(playlistName, shuffle, tracks, uris)
+            }) {
                 is AddToLibraryUseCase.Result.Success ->
                     hideDialog()
                 is AddToLibraryUseCase.Result.Failure ->
@@ -237,7 +241,7 @@ class AddButtonViewModel @Inject constructor(
                         permissionsUsed = result.permissionsUsed,
                         permissionsAllowed = result.permissionAllowance,
                     ) { permissionGranted ->
-                        if (permissionGranted) scope.launch {
+                        if (permissionGranted) scope.launchIO {
                             addToLibrary.addPlaylist(playlistName, shuffle, tracks)
                         } else messageHandler.postMessage(
                             R.string.cant_add_playlist_warning,
