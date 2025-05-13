@@ -5,8 +5,6 @@ package com.cliffracertech.soundaura
 
 import android.content.Context
 import androidx.core.net.toUri
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.cliffracertech.soundaura.addbutton.AddButtonDialogState
@@ -21,55 +19,40 @@ import com.cliffracertech.soundaura.model.ReadModifyPresetsUseCase
 import com.cliffracertech.soundaura.model.TestPermissionHandler
 import com.cliffracertech.soundaura.model.Validator
 import com.cliffracertech.soundaura.model.database.PlaylistDao
-import com.cliffracertech.soundaura.model.database.SoundAuraDatabase
 import com.cliffracertech.soundaura.model.database.Track
 import com.google.common.truth.Truth.assertThat
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class AddButtonViewModelTests {
     private val context = ApplicationProvider.getApplicationContext<Context>()
-    private val dispatcher = UnconfinedTestDispatcher()
-    private val scope = TestScope(dispatcher)
-    @get:Rule val tempFolder: TemporaryFolder =
-        TemporaryFolder.builder().assureDeletion().build()
+    @get:Rule val testScopeRule = TestScopeRule()
+    @get:Rule val dbTestRule = SoundAuraDbTestRule(context)
+    @get:Rule val dataStoreTestRule = DataStoreTestRule(testScopeRule.scope)
+
+    private val db get() = dbTestRule.db
+    private val playlistDao get() = db.playlistDao()
+
     private lateinit var navigationState: NavigationState
-    private lateinit var db: SoundAuraDatabase
-    private lateinit var playlistDao: PlaylistDao
     private lateinit var instance: AddButtonViewModel
 
     @Before fun init() {
         val messageHandler = MessageHandler()
         navigationState = NavigationState()
-
-        db = Room.inMemoryDatabaseBuilder(context, SoundAuraDatabase::class.java).build()
-        val dataStore = PreferenceDataStoreFactory.create(scope = scope.backgroundScope) {
-            tempFolder.newFile("test.preferences_pb")
-        }
-        val activePresetState = ActivePresetState(dataStore, db.presetDao())
-
-        playlistDao = db.playlistDao()
+        val activePresetState = ActivePresetState(dataStoreTestRule.dataStore, db.presetDao())
         val readModifyPresetsUseCase = ReadModifyPresetsUseCase(
             messageHandler, activePresetState, db.presetDao(), playlistDao)
         val addToLibraryUseCase = AddToLibraryUseCase(TestPermissionHandler(), playlistDao)
         
         instance = AddButtonViewModel(
             context, messageHandler, navigationState,
-            readModifyPresetsUseCase, addToLibraryUseCase,
-            dispatcher)
+            readModifyPresetsUseCase, addToLibraryUseCase)
     }
-
-    @After fun clean_up() { scope.cancel() }
 
     private val testUris = List(3) { "uri $it".toUri() }
     private suspend fun PlaylistDao.getPlaylistUris(id: Long) = getPlaylistTracks(id).map(Track::uri)
