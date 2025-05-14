@@ -48,7 +48,6 @@ import com.cliffracertech.soundaura.screenSizeBasedHorizontalPadding
 import com.cliffracertech.soundaura.ui.tweenDuration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -171,7 +170,7 @@ sealed class LibraryState {
                 onDismissRequest = ::dismissDialog)
         }
         override fun onExtraOptionsClick(playlist: Playlist) {
-            scope.launch {
+            scope.launchIO {
                 val existingTracks = readLibrary.getPlaylistTracks(playlist.id)
                 val shuffleEnabled = readLibrary.getPlaylistShuffle(playlist.id)
                 assert((existingTracks.size == 1) == playlist.isSingleTrack)
