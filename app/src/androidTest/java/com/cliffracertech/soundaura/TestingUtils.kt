@@ -79,10 +79,6 @@ class DatabaseTestRule<T: RoomDatabase>(
     override fun starting(description: Description) {
         db = Room.inMemoryDatabaseBuilder(context, klass).build()
     }
-
-    override fun finished(description: Description) {
-        db.close()
-    }
 }
 
 fun SoundAuraDbTestRule(context: Context) = DatabaseTestRule(context, SoundAuraDatabase::class.java)
