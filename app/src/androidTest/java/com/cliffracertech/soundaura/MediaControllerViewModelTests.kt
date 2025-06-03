@@ -3,15 +3,10 @@
  * the project's root directory to see the full license. */
 package com.cliffracertech.soundaura
 
-import android.content.Context
 import androidx.core.net.toUri
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.cliffracertech.soundaura.mediacontroller.DialogType
@@ -23,41 +18,34 @@ import com.cliffracertech.soundaura.model.NavigationState
 import com.cliffracertech.soundaura.model.PlaybackState
 import com.cliffracertech.soundaura.model.TestPlaybackState
 import com.cliffracertech.soundaura.model.database.LibraryPlaylist
-import com.cliffracertech.soundaura.model.database.PlaylistDao
 import com.cliffracertech.soundaura.model.database.Preset
-import com.cliffracertech.soundaura.model.database.PresetDao
-import com.cliffracertech.soundaura.model.database.SoundAuraDatabase
 import com.cliffracertech.soundaura.service.ActivePlaylistSummary
 import com.cliffracertech.soundaura.settings.PrefKeys
 import com.google.common.collect.Range
 import com.google.common.truth.Truth.assertThat
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import java.time.Duration
 import java.time.Instant
 
 @RunWith(AndroidJUnit4::class)
 class MediaControllerViewModelTests {
+    @get:Rule val testScopeRule = TestScopeRule()
+    @get:Rule val dbTestRule = SoundAuraDbTestRule(
+        ApplicationProvider.getApplicationContext())
+    @get:Rule val dataStoreTestRule = DataStoreTestRule(testScopeRule.scope)
+
+    private val presetDao get() = dbTestRule.db.presetDao()
+    private val playlistDao get() = dbTestRule.db.playlistDao()
+    private val dataStore get() = dataStoreTestRule.dataStore
     private val activePresetNameKey = stringPreferencesKey(PrefKeys.activePresetName)
-    private val dispatcher = UnconfinedTestDispatcher()
-    private val scope = TestScope(dispatcher)
-    @get:Rule val tempFolder: TemporaryFolder =
-        TemporaryFolder.builder().assureDeletion().build()
-    private lateinit var dataStore: DataStore<Preferences>
-    private lateinit var db: SoundAuraDatabase
-    private lateinit var presetDao: PresetDao
-    private lateinit var playlistDao: PlaylistDao
+
     private lateinit var navigationState: NavigationState
     private lateinit var playbackState: PlaybackState
     private lateinit var activePresetState: ActivePresetState
@@ -65,13 +53,6 @@ class MediaControllerViewModelTests {
     private lateinit var instance: MediaControllerViewModel
 
     @Before fun init() {
-        dataStore = PreferenceDataStoreFactory.create(scope = scope.backgroundScope) {
-            tempFolder.newFile("test.preferences_pb")
-        }
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        db = Room.inMemoryDatabaseBuilder(context, SoundAuraDatabase::class.java).build()
-        presetDao = db.presetDao()
-        playlistDao = db.playlistDao()
         navigationState = NavigationState()
         playbackState = TestPlaybackState()
         activePresetState = ActivePresetState(dataStore, presetDao)
@@ -79,11 +60,7 @@ class MediaControllerViewModelTests {
         instance = MediaControllerViewModel(
             presetDao, navigationState, playbackState,
             activePresetState, messageHandler,
-            dataStore, playlistDao, dispatcher)
-    }
-
-    @After fun clean_up() {
-        scope.cancel()
+            dataStore, playlistDao)
     }
 
     private val testPlaylistNames = List(5) { "playlist $it" }
@@ -202,6 +179,7 @@ class MediaControllerViewModelTests {
                                .launchIn(backgroundScope)
 
         playButton.onClick()
+        waitUntil(250L) { latestMessage != null } // should time out
         assertThat(latestMessage).isNull()
     }
 
@@ -215,6 +193,7 @@ class MediaControllerViewModelTests {
                                .launchIn(backgroundScope)
 
         playButton.onClick()
+        waitUntil { latestMessage != null }
         assertThat(latestMessage?.stringResource?.stringResId)
             .isEqualTo(R.string.play_button_long_click_hint_text)
         assertThat(dataStore.data.first()[prefKey]).isTrue()
@@ -386,7 +365,7 @@ class MediaControllerViewModelTests {
         assertThat(renameDialog.message).isNull()
 
         renameDialog.finish()
-        waitUntil { currentPresetNames?.get(1) == newName }
+        waitUntil { currentPresetNames ?.get(1) == newName }
         assertThat(instance.shownDialog).isNull()
         assertThat(currentPresetNames?.get(1)).isEqualTo(newName)
     }
@@ -431,6 +410,7 @@ class MediaControllerViewModelTests {
         waitUntil { !activePreset.isModified } // should time out
         assertThat(presetDao.getPlaylistNamesFor(testPresetNames[2]))
             .containsExactly(testPlaylistNames[3], testPlaylistNames[4])
+        waitUntil { activePreset.isModified }
         assertThat(activePreset.isModified).isTrue()
     }
 
@@ -439,7 +419,6 @@ class MediaControllerViewModelTests {
         presetList.onOverwriteClick(testPresetNames[1])
         confirmatoryDialog.onConfirmClick()
 
-        waitUntil { !presetDao.getPlaylistNamesFor(testPresetNames[1]).contains(testPlaylistNames[0]) }
         assertThat(instance.shownDialog).isNull()
         assertThat(presetDao.getPlaylistNamesFor(testPresetNames[1]))
             .containsExactly(testPlaylistNames[3], testPlaylistNames[4])
@@ -470,6 +449,7 @@ class MediaControllerViewModelTests {
         presetList.onDeleteClick(testPresetNames[1])
         instance.shownDialog?.onDismissRequest?.invoke()
         assertThat(instance.shownDialog).isNull()
+        waitUntil { currentPresets?.size == 2 }
         assertThat(currentPresetNames).containsExactlyElementsIn(testPresetNames)
     }
 
@@ -487,7 +467,6 @@ class MediaControllerViewModelTests {
         activePresetState.setName(testPresetNames[0])
         presetList.onDeleteClick(testPresetNames[0])
         confirmatoryDialog.onConfirmClick()
-        waitUntil { activePreset.name == null }
         assertThat(activePreset.name).isNull()
     }
 
