@@ -5,52 +5,38 @@ package com.cliffracertech.soundaura
 
 import android.content.Context
 import androidx.core.net.toUri
-import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.cliffracertech.soundaura.model.database.PlaylistDao
-import com.cliffracertech.soundaura.model.database.SoundAuraDatabase
 import com.cliffracertech.soundaura.model.database.TrackNamesValidator
 import com.google.common.truth.Truth.assertThat
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.*
-import org.junit.After
+import kotlinx.coroutines.test.runTest
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class TrackNamesValidatorTests {
     private val context = ApplicationProvider.getApplicationContext<Context>()
-    private val coroutineScope = TestCoroutineScope()
+    @get:Rule val testScopeRule = TestScopeRule()
+    @get:Rule val dbTestRule = SoundAuraDbTestRule(context)
 
+    private val playlistDao get() = dbTestRule.db.playlistDao()
     private lateinit var instance: TrackNamesValidator
-    private lateinit var db: SoundAuraDatabase
-    private lateinit var playlistDao: PlaylistDao
 
     private val existingNames = List(5) { "track $it" }
     private val newNames = List(5) { "new track $it" }
 
     @Before fun init() {
-        db = Room.inMemoryDatabaseBuilder(context, SoundAuraDatabase::class.java).build()
-        playlistDao = db.playlistDao()
-        runBlocking {
+        runTest {
             val uris = List(5) { "uri $it".toUri() }
             playlistDao.insertSingleTrackPlaylists(existingNames, uris, uris)
         }
-        instance = TrackNamesValidator(playlistDao, coroutineScope, newNames)
-    }
-
-    @After fun clean_up() {
-        db.close()
-        coroutineScope.cancel()
+        instance = TrackNamesValidator(playlistDao, testScopeRule.scope, newNames)
     }
 
     @Test fun begins_with_provided_names_without_errors() = runTest {
         assertThat(instance.values).containsExactlyElementsIn(newNames).inOrder()
-        waitUntil { false } // we need to wait until the validator retrieves the
-                            // existing track/playlist names from the database
         assertThat(instance.errorIndices).isEmpty()
         assertThat(instance.message).isNull()
     }
