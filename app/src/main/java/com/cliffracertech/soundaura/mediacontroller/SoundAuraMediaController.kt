@@ -39,7 +39,6 @@ import com.cliffracertech.soundaura.ui.tweenDuration
     alignment: BiasAlignment = Alignment.BottomStart as BiasAlignment,
 ) = CompositionLocalProvider(LocalContentColor provides MaterialTheme.colors.onPrimary) {
     val ld = LocalLayoutDirection.current
-    val alignToEnd = alignment == Alignment.TopEnd
 
     val contentAreaSize = remember(padding) {
         val startPadding = padding.calculateStartPadding(ld)
@@ -52,40 +51,31 @@ import com.cliffracertech.soundaura.ui.tweenDuration
 
     val sizes = remember(padding, alignment) {
         // The goal is to have the media controller have such a length that
-        // the play/pause icon is centered in the content area's width in
-        // portrait mode, or centered in the content area's height in
-        // landscape mode. This preferred length is found by adding half of
-        // the play/pause button's size and the stop timer display's length
-        // (in case it needs to be displayed) to half of the length of the
-        // content area. The min value between this preferred length and the
-        // full content area length minus 64dp (i.e. the add button's 56dp
-        // size plus an 8dp margin) is then used to ensure that for small
-        // screen sizes the media controller can't overlap the add button.
+        // the play/pause icon is centered in the content area's width. This
+        // preferred length is found by adding half of the play/pause button's
+        // size and the stop timer display's length (in case it needs to be
+        // displayed) to half of the length of the content area. The min value
+        // between this preferred length and the full content area length
+        // minus 64dp (i.e. the add button's 56dp size plus an 8dp margin) is
+        // then used to ensure that for small screen sizes the media controller
+        // can't overlap the add button.
         val playButtonLength = MediaControllerSizes.defaultPlayButtonLengthDp.dp
         val dividerThickness = MediaControllerSizes.dividerThicknessDp.dp
-        val stopTimerLength =
-            if (alignToEnd) MediaControllerSizes.defaultStopTimerHeightDp.dp
-            else            MediaControllerSizes.defaultStopTimerWidthDp.dp
+        val stopTimerLength = MediaControllerSizes.defaultStopTimerWidthDp.dp
         val extraLength = playButtonLength / 2f + stopTimerLength
-        val length = if (alignToEnd) contentAreaSize.height / 2f + extraLength
-                     else            contentAreaSize.width / 2f + extraLength
-        val maxLength = if (alignToEnd) contentAreaSize.height - 64.dp
-                        else            contentAreaSize.width - 64.dp
+        val length = contentAreaSize.width / 2f + extraLength
+        val maxLength = contentAreaSize.width - 64.dp
         val activePresetLength = minOf(length, maxLength) - playButtonLength -
                                  dividerThickness - stopTimerLength
         MediaControllerSizes(
-            orientation = if (alignToEnd) Orientation.Vertical
-                          else            Orientation.Horizontal,
+            orientation = Orientation.Horizontal,
             activePresetLength = activePresetLength,
             presetSelectorSize = DpSize(
-                width = contentAreaSize.width * if (alignToEnd) 0.6f
-                                                else            1.0f,
-                height = if (!alignToEnd) 350.dp
-                         else contentAreaSize.height))
+                width = contentAreaSize.width,
+                height = 350.dp))
     }
 
     val viewModel: MediaControllerViewModel = viewModel()
-
     val startColor = MaterialTheme.colors.primaryVariant
     val endColor = MaterialTheme.colors.secondaryVariant
     val backgroundBrush = remember(startColor, endColor) {
