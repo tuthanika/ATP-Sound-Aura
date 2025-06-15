@@ -26,7 +26,6 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.SnackbarHost
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
-import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionContext
@@ -159,8 +158,6 @@ class MainActivity : ComponentActivity() {
 
         setContentWithTheme {
             BoxWithConstraints(Modifier.fillMaxSize()) {
-                val windowWidthSizeClass = LocalWindowSizeClass.current.widthSizeClass
-                val widthIsConstrained = windowWidthSizeClass == WindowWidthSizeClass.Compact
                 val snackbarHostState = remember { SnackbarHostState() }
 
                 LaunchedEffect(Unit) {
@@ -179,8 +176,8 @@ class MainActivity : ComponentActivity() {
                         insets = WindowInsets.navigationBars,
                         additionalTop = 8.dp,
                         additionalStart = 8.dp,
-                        additionalBottom = if (widthIsConstrained) 72.dp else 8.dp,
-                        additionalEnd = mainContentAdditionalEndMargin(widthIsConstrained))
+                        additionalBottom = MediaControllerSizes.defaultMinThicknessDp.dp + 16.dp,
+                        additionalEnd = 8.dp)
                     MainContent(mainContentPadding)
                 }
 
@@ -193,15 +190,11 @@ class MainActivity : ComponentActivity() {
 
                 SoundAuraMediaController(
                     padding = floatingButtonPadding,
-                    alignment = if (widthIsConstrained)
-                                    Alignment.BottomStart as BiasAlignment
-                                else Alignment.TopEnd as BiasAlignment)
+                    alignment = Alignment.BottomStart as BiasAlignment)
 
-                AddTrackButton(
-                    widthIsConstrained = widthIsConstrained,
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(floatingButtonPadding))
+                AddTrackButton(Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(floatingButtonPadding))
 
                 SnackbarHost(
                     hostState = snackbarHostState,
@@ -243,10 +236,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun mainContentAdditionalEndMargin(widthIsConstrained: Boolean) =
-        if (widthIsConstrained) 8.dp
-        else 8.dp + MediaControllerSizes.defaultStopTimerWidthDp.dp + 8.dp
-
     @Composable private fun MainContent(padding: PaddingValues) {
         // The track list state is remembered here so that the
         // scrolling position will not be lost if the user
@@ -266,26 +255,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Composable private fun AddTrackButton(
-        widthIsConstrained: Boolean,
-        modifier: Modifier = Modifier,
-    ) {
+    @Composable private fun AddTrackButton(modifier: Modifier = Modifier) {
         val showingPresetSelector = viewModel.showingPresetSelector
         // Different stiffnesses are used for the x and y offsets so that the
         // add button moves in a swooping movement instead of a linear one
         val addButtonXDpOffset by animateDpAsState(
-            targetValue = when {
-                showingPresetSelector -> (-16).dp
-                widthIsConstrained -> 0.dp
-                else -> {
-                    // We want the x offset to be half of the difference between the
-                    // total end margin and the button size, so that the button appears
-                    // centered within the end margin
-                    val mediaControllerSize = MediaControllerSizes.defaultStopTimerWidthDp.dp
-                    val buttonSize = 56.dp
-                    (mediaControllerSize - buttonSize) / -2f
-                }
-            }, label = "Add button x offset animation",
+            targetValue = if (showingPresetSelector) (-16).dp
+                          else                       0.dp,
+            label = "Add button x offset animation",
             animationSpec = tween(tweenDuration * 5 / 4, 0, LinearOutSlowInEasing))
 
         val addButtonYDpOffset by animateDpAsState(
