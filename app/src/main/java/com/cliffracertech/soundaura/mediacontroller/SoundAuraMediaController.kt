@@ -79,7 +79,8 @@ import com.cliffracertech.soundaura.ui.tweenDuration
     val startColor = MaterialTheme.colors.primaryVariant
     val endColor = MaterialTheme.colors.secondaryVariant
     val backgroundBrush = remember(startColor, endColor) {
-        Brush.horizontalGradient(colors = listOf(startColor, endColor))
+            Brush.horizontalGradient(colors = listOf(startColor, endColor),
+                                     endX = constraints.maxWidth.toFloat())
     }
 
     val enterSpec = tween<Float>(

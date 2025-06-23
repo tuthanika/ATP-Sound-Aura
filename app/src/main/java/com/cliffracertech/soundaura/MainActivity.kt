@@ -36,7 +36,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -188,9 +187,7 @@ class MainActivity : ComponentActivity() {
                     additionalBottom = 8.dp,
                     additionalTop = 8.dp + 56.dp)
 
-                SoundAuraMediaController(
-                    padding = floatingButtonPadding,
-                    alignment = Alignment.BottomStart as BiasAlignment)
+                SoundAuraMediaController(padding = floatingButtonPadding)
 
                 AddTrackButton(Modifier
                     .align(Alignment.BottomEnd)
