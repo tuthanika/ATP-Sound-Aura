@@ -24,9 +24,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cliffracertech.soundaura.rememberDerivedStateOf
@@ -91,7 +95,7 @@ import com.cliffracertech.soundaura.ui.tweenDuration
         durationMillis = tweenDuration,
         easing = LinearOutSlowInEasing)
     val hasStopTime by rememberDerivedStateOf { viewModel.state.stopTime != null }
-    val transformOrigin = rememberClippedBrushBoxTransformOrigin(
+    val transformOrigin = rememberBoxTransformOrigin(
         alignment = alignment,
         padding = padding,
         dpSize = sizes.collapsedSize(hasStopTime))
@@ -110,4 +114,41 @@ import com.cliffracertech.soundaura.ui.tweenDuration
             padding = padding)
     }
     DialogShower(viewModel.shownDialog)
+}
+
+/** Return a [TransformOrigin] that corresponds to the visual center of a
+ * box with size [dpSize] inside the receiver [BoxWithConstraintsScope]'s
+ * [BoxWithConstraints]. */
+@Composable
+fun BoxWithConstraintsScope.rememberBoxTransformOrigin(
+    alignment: BiasAlignment,
+    padding: PaddingValues,
+    dpSize: DpSize,
+): TransformOrigin {
+    val density = LocalDensity.current
+    val ld = LocalLayoutDirection.current
+    return remember(dpSize, alignment, padding) {
+        val startPadding = with (density) { padding.calculateStartPadding(ld).toPx() }
+        val topPadding = with (density) { padding.calculateTopPadding().toPx() }
+        val endPadding = with (density) { padding.calculateEndPadding(ld).toPx() }
+        val bottomPadding = with (density) { padding.calculateBottomPadding().toPx() }
+
+        val maxWidth = constraints.maxWidth.toFloat() - startPadding - endPadding
+        val maxHeight = constraints.maxHeight.toFloat() - topPadding - bottomPadding
+
+        val xAlignment = alignment.horizontalBias / 2f + 0.5f
+        val yAlignment = alignment.verticalBias / 2f + 0.5f
+
+        val size = with(density) { dpSize.toSize() }
+        val topLeftOffset = Offset(
+            x = startPadding + if (ld == LayoutDirection.Ltr)
+                                   (maxWidth - size.width) * xAlignment
+                               else size.width - (maxWidth - size.width) * xAlignment,
+            y = topPadding + (maxHeight - size.height) * yAlignment)
+        val centerOffset = Offset(size.width / 2, size.height / 2)
+        val totalOffset = topLeftOffset + centerOffset
+
+        TransformOrigin(totalOffset.x / constraints.maxWidth,
+            totalOffset.y / constraints.maxHeight)
+    }
 }
