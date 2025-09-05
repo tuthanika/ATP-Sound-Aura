@@ -55,6 +55,7 @@ import com.cliffracertech.soundaura.rememberDerivedStateOf
 import com.cliffracertech.soundaura.rememberMutableStateOf
 import com.cliffracertech.soundaura.ui.MarqueeText
 import com.cliffracertech.soundaura.ui.Overlay
+import com.cliffracertech.soundaura.ui.VerticalDivider
 import com.cliffracertech.soundaura.ui.defaultSpring
 import com.cliffracertech.soundaura.ui.theme.SoundAuraTheme
 import kotlinx.collections.immutable.toImmutableList
@@ -146,20 +147,15 @@ class ActivePresetViewState(
     val size = sizes.stopTimerSize
     val clickLabel = stringResource(R.string.stop_timer_click_label)
 
-    LinearLayout(
-        orientation = sizes.orientation,
-        modifier = modifier
-            .requiredSize(size)
-            .graphicsLayer {
-                alpha = appearanceProgress
-                translationX = if (sizes.orientation.isVertical) 0f else
-                                   translationPercent * size.width.toPx()
-                translationY = if (sizes.orientation.isHorizontal) 0f else
-                                   translationPercent * size.height.toPx()
-            }.clip(sizes.stopTimerShape)
-            .clickable(true, clickLabel, Role.Button, onClick),
+    Row(modifier = modifier
+        .requiredSize(size)
+        .graphicsLayer {
+            alpha = appearanceProgress
+            translationX = translationPercent * size.width.toPx()
+        }.clip(sizes.stopTimerShape)
+        .clickable(true, clickLabel, Role.Button, onClick),
     ) {
-        Divider(sizes.orientation, sizeFraction = 0.8f)
+        VerticalDivider(heightFraction = 0.8f)
         StopTimer(lastNonNullStopTime, Modifier.fillMaxSize())
     }
 }
@@ -192,13 +188,11 @@ class ActivePresetViewState(
     stopTimeProvider: () -> Instant?,
     onStopTimerClick: () -> Unit,
     modifier: Modifier = Modifier,
-) = LinearLayout(
-    orientation = sizes.orientation,
-    modifier = modifier
-        .graphicsLayer { alpha = 1f - transitionProgressProvider() }
+) = Row(modifier = modifier
+    .graphicsLayer { alpha = 1f - transitionProgressProvider() }
 ) {
     ActivePresetView(sizes, activePresetState)
-    Divider(sizes.orientation, sizeFraction = 0.8f)
+    VerticalDivider(heightFraction = 0.8f)
     PlayButton(
         state = playButtonState,
         modifier = Modifier
