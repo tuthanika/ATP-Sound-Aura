@@ -1,11 +1,9 @@
-/*
- * This file is part of SoundAura, which is released under the terms of the Apache
- * License 2.0. See license.md in the project's root directory to see the full license.
- */
+/* This file is part of SoundAura, which is released under
+ * the terms of the Apache License 2.0. See license.md in
+ * the project's root directory to see the full license. */
 
 package com.cliffracertech.soundaura.mediacontroller
 
-import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -13,10 +11,8 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import com.cliffracertech.soundaura.ui.bottomShape
 import com.cliffracertech.soundaura.ui.endShape
 import com.cliffracertech.soundaura.ui.startShape
-import com.cliffracertech.soundaura.ui.topShape
 
 /**
  * A collection of sizes that a [MediaController] uses to determine its
@@ -29,7 +25,6 @@ import com.cliffracertech.soundaura.ui.topShape
  * [MediaController] given the provided sizes and whether or not the
  * [MediaController] is showing an auto stop time.
  *
- * @param orientation The [Orientation] of the [MediaController]
  * @param minThickness The minimum thickness of the [MediaController] in
  *     its collapsed state. The actual thickness will be the greater of
  *     this value and the auto stop time indicator's height (in horizontal
@@ -48,7 +43,6 @@ import com.cliffracertech.soundaura.ui.topShape
  *     with the rest of the [MediaController].
  */
 data class MediaControllerSizes(
-    val orientation: Orientation,
     val minThickness: Dp = defaultMinThicknessDp.dp,
     val activePresetLength: Dp,
     val playButtonLength: Dp = defaultPlayButtonLengthDp.dp,
@@ -58,33 +52,25 @@ data class MediaControllerSizes(
     val presetSelectorSize: DpSize,
 ) {
     val dividerSize get() = dividerThicknessDp.dp
-    val stopTimeLength get() =
-        if (orientation.isVertical) stopTimerSize.height
-        else                        stopTimerSize.width
+    val stopTimeLength get() = stopTimerSize.width
 
-    val collapsedThickness = maxOf(minThickness,
-        if (orientation.isVertical) stopTimerSize.width
-        else                        stopTimerSize.height)
+    val collapsedThickness = maxOf(minThickness, stopTimerSize.height)
 
-    val activePresetSize = DpSize(
-        width = if (orientation.isVertical) collapsedThickness else activePresetLength,
-        height = if (orientation.isVertical) activePresetLength else collapsedThickness)
+    val activePresetSize = DpSize(width = activePresetLength,
+                                  height = collapsedThickness)
 
-    val buttonSize = DpSize(
-        width = if (orientation.isVertical) collapsedThickness else playButtonLength,
-        height = if (orientation.isVertical) playButtonLength else collapsedThickness)
+    val buttonSize = DpSize(width = playButtonLength,
+                            height = collapsedThickness)
 
     /** Return the size of a collapsed [MediaController] (i.e. when its
      * showingPresetSelector parameter is false) given whether or not the
      * auto stop time is being shown and the orientation. */
     fun collapsedSize(showingStopTimer: Boolean): DpSize {
         val stopTimerLength = if (!showingStopTimer) 0.dp
-        else dividerSize + stopTimeLength
+                              else dividerSize + stopTimeLength
         val length = activePresetLength + dividerSize +
                      playButtonLength + stopTimerLength
-        return DpSize(
-            width = if (orientation.isVertical) collapsedThickness else length,
-            height = if (orientation.isVertical) length else collapsedThickness)
+        return DpSize(width = length, height = collapsedThickness)
     }
 
     /** Return a remembered current size of a [MediaController] instance given
@@ -99,14 +85,8 @@ data class MediaControllerSizes(
     }
 
     val shape = RoundedCornerShape(28.dp)
-
-    val activePresetShape =
-        if (orientation.isVertical) shape.topShape()
-        else                        shape.startShape()
-
-    val stopTimerShape =
-        if (orientation.isVertical) shape.bottomShape()
-        else                        shape.endShape()
+    val activePresetShape = shape.startShape()
+    val stopTimerShape = shape.endShape()
 
     fun playButtonShape(showingStopTimer: Boolean) =
         if (showingStopTimer) RectangleShape

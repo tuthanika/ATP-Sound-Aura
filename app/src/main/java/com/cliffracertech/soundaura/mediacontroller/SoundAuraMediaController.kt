@@ -10,7 +10,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -72,7 +71,6 @@ import com.cliffracertech.soundaura.ui.tweenDuration
         val activePresetLength = minOf(length, maxLength) - playButtonLength -
                                  dividerThickness - stopTimerLength
         MediaControllerSizes(
-            orientation = Orientation.Horizontal,
             activePresetLength = activePresetLength,
             presetSelectorSize = DpSize(
                 width = contentAreaSize.width,

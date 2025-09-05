@@ -4,14 +4,12 @@
 package com.cliffracertech.soundaura.mediacontroller
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,10 +37,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
@@ -61,20 +57,6 @@ import com.cliffracertech.soundaura.ui.theme.SoundAuraTheme
 import kotlinx.collections.immutable.toImmutableList
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-
-val Orientation.isHorizontal get() = this == Orientation.Horizontal
-val Orientation.isVertical get() = this == Orientation.Vertical
-
-fun Modifier.rotateClockwise() = layout { measurable, constraints ->
-    val placeable = measurable.measure(constraints.copy(
-        minWidth = constraints.minHeight, maxWidth = constraints.maxHeight,
-        minHeight = constraints.minWidth, maxHeight = constraints.maxWidth))
-    layout(placeable.height, placeable.width) {
-        placeable.place(
-            x = -(placeable.width / 2 - placeable.height / 2),
-            y = -(placeable.height / 2 - placeable.width / 2))
-    }
-}.rotate(90f)
 
 /** A collection of state related to the display of an active preset. The
  * name of the active preset, or null if there isn't one, can be accessed
@@ -97,16 +79,15 @@ class ActivePresetViewState(
     modifier: Modifier = Modifier,
 ) {
     val onClickLabel = stringResource(R.string.preset_button_click_label)
-    val columnModifier = remember(modifier, sizes.orientation) {
-        modifier.size(sizes.activePresetSize)
-                .clip(sizes.activePresetShape)
-                .clickable(true, onClickLabel, Role.Button, state.onClick)
-                .then(if (sizes.orientation.isHorizontal)
-                          Modifier.padding(start = 12.dp, end = 8.dp)
-                    else Modifier.padding(top = 12.dp, bottom = 8.dp)
-                                   .rotateClockwise())
-    }
-    Column(columnModifier, Arrangement.Center, Alignment.CenterHorizontally) {
+    Column(
+        modifier = modifier
+            .size(sizes.activePresetSize)
+            .clip(sizes.activePresetShape)
+            .clickable(true, onClickLabel, Role.Button, state.onClick)
+            .padding(start = 12.dp, end = 8.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         val style = MaterialTheme.typography.caption
         Text(text = stringResource(R.string.playing),
              maxLines = 1, style = style, softWrap = false)
@@ -372,15 +353,7 @@ class MediaControllerState(
                     shape = RoundedCornerShape(28.dp)),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            val titleHeight by expandTransition.animateDp(
-                transitionSpec = { defaultSpring() },
-                label = "MediaController/preset selector title height transition",
-            ) { expanded ->
-                if (!expanded && sizes.orientation.isVertical)
-                    sizes.collapsedSize(hasStopTime).height
-                else sizes.minThickness
-            }
-            Box(Modifier.height(titleHeight)) {
+            Box(Modifier.height(sizes.minThickness)) {
                 if (expandTransitionProgress > 0f)
                     PresetSelectorTitle(
                         sizes, state.onCloseButtonClick,
@@ -418,7 +391,6 @@ fun MediaControllerPreview() = SoundAuraTheme {
     MediaController(
         sizes = MediaControllerSizes(
             activePresetLength = 200.dp - 56.dp,
-            orientation = Orientation.Horizontal,
             presetSelectorSize = DpSize(300.dp, 300.dp)),
         state = remember { MediaControllerState(
             ActivePresetViewState(
