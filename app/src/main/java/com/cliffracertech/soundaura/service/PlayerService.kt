@@ -430,8 +430,16 @@ class PlayerService: LifecycleService() {
         }
         private val playbackChangeListeners = mutableListOf<PlaybackChangeListener>()
 
-        fun addPlaybackChangeListener(listener: PlaybackChangeListener) {
+        /** Register the [listener] so that future changes in playback
+         * state will be sent to it, sending the current playback state
+         * as a 'change' immediately if [updateImmediately] is true. */
+        fun addPlaybackChangeListener(
+            updateImmediately: Boolean = false,
+            listener: PlaybackChangeListener
+        ) {
             playbackChangeListeners.add(listener)
+            if (updateImmediately)
+                listener.onPlaybackStateChange(playbackState)
         }
 
         fun removePlaybackChangeListener(listener: PlaybackChangeListener) {

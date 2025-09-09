@@ -3,9 +3,9 @@
 
 package com.cliffracertech.soundaura
 
-import android.support.v4.media.session.PlaybackStateCompat
+import android.content.ComponentName
+import android.service.quicksettings.TileService
 import android.util.Log
-import androidx.core.content.ContextCompat
 import com.cliffracertech.soundaura.service.PlayerService
 import com.cliffracertech.soundaura.service.TogglePlaybackTileService
 import dagger.hilt.android.HiltAndroidApp
@@ -16,15 +16,9 @@ class SoundAuraApplication : android.app.Application() {
         super.onCreate()
 
         PlayerService.addPlaybackChangeListener {
-            TogglePlaybackTileService.updateState(
-                context = applicationContext, state = it)
-        }
-
-        TogglePlaybackTileService.addPlaybackStateRequestListener {
-            if (it == PlaybackStateCompat.STATE_PLAYING)
-                ContextCompat.startForegroundService(
-                    this, PlayerService.playIntent(this))
-            else startService(PlayerService.stopIntent(this))
+            if (!TogglePlaybackTileService.listening)
+                TileService.requestListeningState(
+                    this, ComponentName(this, TogglePlaybackTileService::class.java))
         }
     }
 }
