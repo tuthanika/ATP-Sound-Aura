@@ -3,26 +3,20 @@
  * the project's root directory to see the full license. */
 package com.cliffracertech.soundaura.model
 
-import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
-import android.os.IBinder
-import android.support.v4.media.session.PlaybackStateCompat.STATE_STOPPED
 import androidx.annotation.FloatRange
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.app.ComponentActivity
 import com.cliffracertech.soundaura.service.PlayerService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.components.ActivityRetainedComponent
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ActivityRetainedScoped
-import dagger.hilt.components.SingletonComponent
 import java.time.Duration
 import java.time.Instant
-import javax.inject.Inject
 
 /** An interface that describes the playback state of a set of simultaneously-
  * playing playlists and an automatic stop timer. The 'is playing' state is
@@ -47,98 +41,49 @@ interface PlaybackState {
     fun setPlaylistVolume(playlistId: Long, @FloatRange(0.0, 1.0) volume: Float)
 }
 
-/**
- * An implementation of [PlaybackState] that is backed by a [PlayerService] instance.
- *
- * The methods [onActivityStart] and [onActivityStop] should be called at the
- * app's main activity's [ComponentActivity.onStart] and [ComponentActivity.onStop]
- * methods, respectively. [onActivityStart] will bind the service if it is
- * already running so that the properties [isPlaying] and [stopTime] will
- * reflect the running service's state.
- */
-@ActivityRetainedScoped
-class PlayerServicePlaybackState @Inject constructor(): PlaybackState {
-    private var context: Context? = null
-
-    private var serviceBinder by mutableStateOf<PlayerService.Binder?>(null)
-
-    private val connection = object: ServiceConnection {
-        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            serviceBinder = service as? PlayerService.Binder
-        }
-        override fun onServiceDisconnected(name: ComponentName?) {}
-    }
-
-    private fun Context.bindService() =
-        bindService(Intent(this, PlayerService::class.java), connection, 0)
-
-    private fun unbindService() {
-        if (serviceBinder != null)
-            context?.unbindService(connection)
-        serviceBinder = null
-    }
+/** An implementation of [PlaybackState] that is backed by a [PlayerService] instance. */
+class PlayerServicePlaybackState(
+    @ApplicationContext private val context: Context
+): PlaybackState {
+    override var isPlaying by mutableStateOf(PlayerService.binder?.isPlaying ?: false)
+        private set
 
     init {
-        // This playbackChangeListener ensures that if the services starts,
-        // stops, or changes state outside of the activity (e.g. through the
-        // tile or notification) when the activity is already running, the
-        // change will be reflected in PlaybackState.
         PlayerService.addPlaybackChangeListener {
-            if (it == STATE_STOPPED)
-                unbindService()
-            else if (serviceBinder == null)
-                context?.bindService()
+            isPlaying = PlayerService.binder?.isPlaying ?: false
         }
     }
 
-    fun onActivityStart(context: Context) {
-        this.context = context
-        if (PlayerService.playbackState != STATE_STOPPED)
-            context.bindService()
-    }
-
-    fun onActivityStop() {
-        unbindService()
-        this.context = null
-    }
-
-    override val isPlaying get() = serviceBinder?.isPlaying ?: false
     override fun toggleIsPlaying() {
-        val binder = serviceBinder
-        if (binder != null)
-            binder.toggleIsPlaying()
-        else context?.let {
-            it.startService(PlayerService.playIntent(it))
-            it.bindService()
-        }
+        PlayerService.binder?.toggleIsPlaying() ?:
+            context.startService(PlayerService.playIntent(context))
     }
 
-    override val stopTime get() = serviceBinder?.stopTime
+    override val stopTime get() = PlayerService.binder?.stopTime
     override fun setTimer(duration: Duration) {
-        serviceBinder?.setStopTimer(duration) ?: context?.let {
-            it.startService(PlayerService.setTimerIntent(it, duration))
-            it.bindService()
-        }
+        PlayerService.binder?.setStopTimer(duration) ?:
+            context.startService(PlayerService.setTimerIntent(context, duration))
     }
     override fun clearTimer() {
-        serviceBinder?.clearStopTimer() ?: context?.let {
-            it.startService(PlayerService.setTimerIntent(it, null))
-            it.bindService()
-        }
+        PlayerService.binder?.clearStopTimer() ?:
+            context.startService(PlayerService.setTimerIntent(context, null))
     }
 
     override fun setPlaylistVolume(playlistId: Long, volume: Float) {
-        // If the service is not bound, we do nothing on the assumption that
-        // the volume change will be written to the app's database and will
-        // therefore be reflected next time the service is started and the
-        // active tracks (and their volumes) are read from the database.
-        serviceBinder?.setPlaylistVolume(playlistId, volume)
+        // If the PlayerService is not started, we do nothing on the assumption
+        // that the volume change will be written to the app's database and
+        // will therefore be reflected next time the service is started and
+        // the active tracks (and their volumes) are read from the database.
+        PlayerService.binder?.setPlaylistVolume(playlistId, volume)
     }
 }
 
-@Module @InstallIn(SingletonComponent::class)
+@Module @InstallIn(ActivityRetainedComponent::class)
 class PlaybackStateModule {
-    @Provides fun providePlaybackState(): PlaybackState = PlayerServicePlaybackState()
+    @Provides @ActivityRetainedScoped
+    fun providePlaybackState(
+        @ApplicationContext context: Context
+    ): PlaybackState = PlayerServicePlaybackState(context)
 }
 
 /**
