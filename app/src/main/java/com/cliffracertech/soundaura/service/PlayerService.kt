@@ -131,11 +131,7 @@ class PlayerService: LifecycleService() {
             autoPauseIf(!hasFocus, autoPauseAudioFocusLossKey)
         }
 
-    /** isPlaying is only used so that binding clients have access to a
-     * snapshot aware version of [playbackState]. Its value is updated in
-     * [setPlaybackState], and should not be changed elsewhere to ensure
-     * that mismatched state does not occur.*/
-    private var isPlaying by mutableStateOf(false)
+    private val isPlaying get() = playbackState == STATE_PLAYING
 
     private var stopInsteadOfPause = false
         set(value) {
@@ -181,12 +177,14 @@ class PlayerService: LifecycleService() {
                 .launchIn(this)
         }
 
+        binder = binder ?: Binder()
         playbackModules.forEach { it.onCreate(this) }
         val intent = Intent(this, PlayerService::class.java)
         ContextCompat.startForegroundService(this, intent)
     }
 
     override fun onDestroy() {
+        binder = null
         playbackModules.forEach { it.onDestroy(this) }
         playbackState = STATE_STOPPED
         notification.remove()
@@ -257,7 +255,6 @@ class PlayerService: LifecycleService() {
         if (clearUnpauseLocks)
             unpauseLocks.clear()
         playbackState = newState
-        isPlaying = newState == STATE_PLAYING
         updateNotification()
         if (newState != STATE_STOPPED) when {
             isPlaying ->          playerMap.play()
@@ -452,5 +449,8 @@ class PlayerService: LifecycleService() {
                 for (listener in playbackChangeListeners)
                     listener.onPlaybackStateChange(value)
             }
+
+        var binder: Binder? = null
+            private set
     }
 }
