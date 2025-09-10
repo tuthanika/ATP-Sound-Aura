@@ -29,19 +29,23 @@ audio focus rules and allows SoundAura to play audio alongside other apps.
 - Automatic stopping or pausing when switching to a new audio device that
   has a volume of zero (e.g. when switching from a headset to the device’s
   speaker when the speaker volume is zero).
-- No permissions required, except for the read phone state permission for 
-  the optional auto-pause during calls when ‘play in background’ is turned
-  on, and the notification permission for Android 13 and up.
+- No permissions strictly required. If the user would like to add files over
+  the 512 file limit (or 128 if using Android 10 or lower), then the ‘read
+  external storage’ (Android 12 or lower) or ‘read audio media’ (Android 13
+  or higher) permission is required. If the ‘play in background’ option is
+  turned on, the notification permission is required for Android 13 and up
+  if the user wants to see a notification displaying the playback state, and
+  the ‘read phone state’ permission is required for auto-pausing during a call.
 
 ## Screenshots
 
 https://user-images.githubusercontent.com/42116365/214144949-1600d19f-edbb-436d-a34f-b92cd376d829.mp4
 
 <p>
-  <img src="metadata/en-US/images/phoneScreenshots/1.png" width="200" height="434">
-  <img src="metadata/en-US/images/phoneScreenshots/2.png" width="200" height="434">
-  <img src="metadata/en-US/images/phoneScreenshots/3.png" width="200" height="434">
-  <img src="metadata/en-US/images/phoneScreenshots/4.png" width="200" height="434">
+  <img src="metadata/en-US/images/phoneScreenshots/1.png" width="200" height="434" alt="An image showcasing the app's main screen">
+  <img src="metadata/en-US/images/phoneScreenshots/2.png" width="200" height="434" alt="An image showcasing the app's track sorting options">
+  <img src="metadata/en-US/images/phoneScreenshots/3.png" width="200" height="434" alt="An image showcasing the app's dark theme and settings screen">
+  <img src="metadata/en-US/images/phoneScreenshots/4.png" width="200" height="434" alt="An image showcasing the app's track filtering options">
 </p>
 
 ## Tech Stack
