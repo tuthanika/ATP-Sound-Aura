@@ -58,8 +58,11 @@ class TogglePlaybackTileService: TileService() {
             updateImmediately = true, playbackChangeListener)
     }
 
-    override fun onClick() {
+    override fun onStopListening() {
         listening = false
+    }
+
+    override fun onClick() {
         if (PlayerService.playbackState == PlaybackStateCompat.STATE_PLAYING)
             startService(PlayerService.stopIntent(this))
         else startService(PlayerService.playIntent(this))
