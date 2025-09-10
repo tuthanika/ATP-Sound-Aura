@@ -64,6 +64,11 @@ import com.cliffracertech.soundaura.dialog.SoundAuraDialog
                 stringResource(R.string.feature_volume_boost_title) to
                     stringResource(R.string.feature_volume_boost_description,
                         stringResource(R.string.volume_boost_description)))
+            11 -> listOf(
+                stringResource(R.string.version_1_6_change_storage_permission_title) to
+                    stringResource(R.string.version_1_6_change_storage_permission_explanation),
+                stringResource(R.string.version_1_6_change_bug_fixes_title) to
+                    stringResource(R.string.version_1_6_change_bug_fixes_description))
             else -> emptyList()
         }
         features.forEach { (title, description) ->
