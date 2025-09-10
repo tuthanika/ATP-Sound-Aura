@@ -3,7 +3,6 @@
  * the project's root directory to see the full license. */
 package com.cliffracertech.soundaura
 
-import android.content.Context
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
@@ -54,7 +53,7 @@ import com.cliffracertech.soundaura.mediacontroller.MediaControllerSizes
 import com.cliffracertech.soundaura.mediacontroller.SoundAuraMediaController
 import com.cliffracertech.soundaura.model.MessageHandler
 import com.cliffracertech.soundaura.model.NavigationState
-import com.cliffracertech.soundaura.model.PlayerServicePlaybackState
+import com.cliffracertech.soundaura.model.PlaybackState
 import com.cliffracertech.soundaura.settings.AppSettings
 import com.cliffracertech.soundaura.settings.AppTheme
 import com.cliffracertech.soundaura.settings.PrefKeys
@@ -72,7 +71,7 @@ import javax.inject.Inject
     messageHandler: MessageHandler,
     private val dataStore: DataStore<Preferences>,
     private val navigationState: NavigationState,
-    private val playbackState: PlayerServicePlaybackState,
+    private val playbackState: PlaybackState,
 ) : ViewModel() {
     private val scope = viewModelScope + Dispatcher.Immediate
     val messages = messageHandler.messages
@@ -98,10 +97,6 @@ import javax.inject.Inject
     }
 
     fun onBackButtonClick() = navigationState.onBackButtonClick()
-
-    fun onActivityStart(context: Context) = playbackState.onActivityStart(context)
-
-    fun onActivityStop() = playbackState.onActivityStop()
 
     fun onKeyDown(keyCode: Int) = when (keyCode) {
         KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
@@ -133,16 +128,6 @@ val LocalWindowSizeClass = compositionLocalOf {
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val viewModel: MainActivityViewModel by viewModels()
-
-    override fun onStart() {
-        super.onStart()
-        viewModel.onActivityStart(this)
-    }
-
-    override fun onStop() {
-        super.onStop()
-        viewModel.onActivityStop()
-    }
 
     @Suppress("OVERRIDE_DEPRECATION")
     override fun onBackPressed() {

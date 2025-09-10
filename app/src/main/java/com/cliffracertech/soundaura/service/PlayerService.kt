@@ -54,10 +54,10 @@ import javax.inject.Inject
  * PlayerService attempts to play the contents of all playlists that are marked
  * as active in the app's database simultaneously. An optional auto-stop timer
  * can also be set. PlayerService offers no way to change the contents of the
- * active playlist set internally, but playback of the active playlist set or
- * the auto-stop timer can be changed via PlayerService's foreground
- * notification's actions, by sending intents, or through the methods provided
- * by an instance of [PlayerService.Binder] after an activity has been bound.
+ * active playlist set, but playback of the active playlist set or the auto-
+ * stop timer can be changed via PlayerService's foreground notification's
+ * actions, by sending intents, or through the methods provided by an instance
+ * of [PlayerService.Binder].
  *
  * When it is created, PlayerService displays a foreground notification that
  * shows the service's current play/pause state in string form, along with
@@ -70,9 +70,9 @@ import javax.inject.Inject
  * [PlayerService.pauseIntent], or [PlayerService.stopIntent]. The auto-stop
  * timer can be set with an [Intent] provided by [PlayerService.setTimerIntent].
  *
- * Finally, when an activity is bound to PlayerService via [Context.bindService],
- * an instance of [PlayerService.Binder] will be provided that can be used to
- * alter playback via its methods. Note that in order to achieve smooth volume
+ * Finally, playback can be controlled via an instance of [PlayerService.Binder].
+ * A static instance is created when the service starts, and can be accessed via
+ * [PlayerService.binder]. Note that in order to achieve smooth volume
  * changes to already active playlists, the binder's [Binder.setPlaylistVolume]
  * method or PlayerService's method of the same name should be called. Volume
  * changes that occur at the database level will work, but due to database I/O
@@ -131,11 +131,7 @@ class PlayerService: LifecycleService() {
             autoPauseIf(!hasFocus, autoPauseAudioFocusLossKey)
         }
 
-    /** isPlaying is only used so that binding clients have access to a
-     * snapshot aware version of [playbackState]. Its value is updated in
-     * [setPlaybackState], and should not be changed elsewhere to ensure
-     * that mismatched state does not occur.*/
-    private var isPlaying by mutableStateOf(false)
+    private val isPlaying get() = playbackState == STATE_PLAYING
 
     private var stopInsteadOfPause = false
         set(value) {
@@ -181,12 +177,14 @@ class PlayerService: LifecycleService() {
                 .launchIn(this)
         }
 
+        binder = binder ?: Binder()
         playbackModules.forEach { it.onCreate(this) }
         val intent = Intent(this, PlayerService::class.java)
         ContextCompat.startForegroundService(this, intent)
     }
 
     override fun onDestroy() {
+        binder = null
         playbackModules.forEach { it.onDestroy(this) }
         playbackState = STATE_STOPPED
         notification.remove()
@@ -257,7 +255,6 @@ class PlayerService: LifecycleService() {
         if (clearUnpauseLocks)
             unpauseLocks.clear()
         playbackState = newState
-        isPlaying = newState == STATE_PLAYING
         updateNotification()
         if (newState != STATE_STOPPED) when {
             isPlaying ->          playerMap.play()
@@ -368,7 +365,7 @@ class PlayerService: LifecycleService() {
     }
 
     /**
-     * A [android.os.Binder] to allow bound activity's to interact with the service.
+     * An object to read or write the playback state.
      *
      * The state of the playback can be read via the property [isPlaying], and
      * toggled with the method [toggleIsPlaying]. The [Instant] at which
@@ -377,7 +374,7 @@ class PlayerService: LifecycleService() {
      * [clearStopTimer]. The method [setPlaylistVolume] should be called when
      * the volume of an already active playlist changes.
      */
-    inner class Binder: android.os.Binder() {
+    inner class Binder {
         val isPlaying get() = this@PlayerService.isPlaying
         fun toggleIsPlaying() {
             setPlaybackState(if (isPlaying) STATE_PAUSED
@@ -393,11 +390,6 @@ class PlayerService: LifecycleService() {
 
         fun setPlaylistVolume(playlistId: Long, volume: Float) =
             this@PlayerService.setPlaylistVolume(playlistId, volume)
-    }
-
-    override fun onBind(intent: Intent): Binder {
-        super.onBind(intent)
-        return Binder()
     }
 
     /** PlaybackModule enables PlayerService to have its functionality extended
@@ -438,8 +430,16 @@ class PlayerService: LifecycleService() {
         }
         private val playbackChangeListeners = mutableListOf<PlaybackChangeListener>()
 
-        fun addPlaybackChangeListener(listener: PlaybackChangeListener) {
+        /** Register the [listener] so that future changes in playback
+         * state will be sent to it, sending the current playback state
+         * as a 'change' immediately if [updateImmediately] is true. */
+        fun addPlaybackChangeListener(
+            updateImmediately: Boolean = false,
+            listener: PlaybackChangeListener
+        ) {
             playbackChangeListeners.add(listener)
+            if (updateImmediately)
+                listener.onPlaybackStateChange(playbackState)
         }
 
         fun removePlaybackChangeListener(listener: PlaybackChangeListener) {
@@ -452,5 +452,8 @@ class PlayerService: LifecycleService() {
                 for (listener in playbackChangeListeners)
                     listener.onPlaybackStateChange(value)
             }
+
+        var binder: Binder? = null
+            private set
     }
 }
