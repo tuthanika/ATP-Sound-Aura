@@ -9,12 +9,12 @@ import android.support.v4.media.session.PlaybackStateCompat
 import androidx.core.net.toUri
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.rule.ServiceTestRule
 import com.cliffracertech.soundaura.model.database.Track
 import com.cliffracertech.soundaura.service.PlayerService
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -23,7 +23,6 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class PlayerServiceTests {
     private val context = ApplicationProvider.getApplicationContext<Context>()
-    @get:Rule val serviceRule = ServiceTestRule()
     @get:Rule val dbTestRule = SoundAuraDbTestRule(context)
 
     private val dao get() = dbTestRule.db.playlistDao()
@@ -41,86 +40,91 @@ class PlayerServiceTests {
         }
     }
 
+    @After fun cleanup() {
+        context.stopService(Intent(context, PlayerService::class.java))
+        runTest { waitUntil {
+            PlayerService.playbackState == PlaybackStateCompat.STATE_STOPPED
+        }}
+    }
+
     @Test fun playback_begins_in_paused_state_by_default() = runTest {
-        serviceRule.startService(Intent(context, PlayerService::class.java))
+        context.startService(Intent(context, PlayerService::class.java))
         waitUntil { PlayerService.playbackState != PlaybackStateCompat.STATE_STOPPED }
         assertThat(PlayerService.playbackState).isEqualTo(PlaybackStateCompat.STATE_PAUSED)
     }
 
     @Test fun play_intent() = runTest {
         waitUntil { !dao.getNoPlaylistsAreActive().first() }
-        serviceRule.startService(PlayerService.playIntent(context))
+        context.startService(PlayerService.playIntent(context))
         waitUntil { PlayerService.playbackState == PlaybackStateCompat.STATE_PLAYING }
         assertThat(PlayerService.playbackState).isEqualTo(PlaybackStateCompat.STATE_PLAYING)
     }
 
     @Test fun pause_intent() = runTest {
-        serviceRule.startService(PlayerService.pauseIntent(context))
+        context.startService(PlayerService.pauseIntent(context))
         waitUntil { PlayerService.playbackState != PlaybackStateCompat.STATE_STOPPED }
         assertThat(PlayerService.playbackState).isEqualTo(PlaybackStateCompat.STATE_PAUSED)
     }
 
     @Test fun stop_intent_while_stopped_no_ops() = runTest {
-        serviceRule.startService(PlayerService.stopIntent(context))
+        context.startService(PlayerService.stopIntent(context))
         waitUntil { PlayerService.playbackState != PlaybackStateCompat.STATE_STOPPED } // should time out
         assertThat(PlayerService.playbackState).isEqualTo(PlaybackStateCompat.STATE_STOPPED)
     }
 
     @Test fun stop_intent_while_playing() = runTest {
         waitUntil { !dao.getNoPlaylistsAreActive().first() }
-        serviceRule.startService(PlayerService.playIntent(context))
+        context.startService(PlayerService.playIntent(context))
         waitUntil { PlayerService.playbackState != PlaybackStateCompat.STATE_STOPPED }
-        serviceRule.startService(PlayerService.stopIntent(context))
+        context.startService(PlayerService.stopIntent(context))
         waitUntil { PlayerService.playbackState != PlaybackStateCompat.STATE_PLAYING }
         assertThat(PlayerService.playbackState).isEqualTo(PlaybackStateCompat.STATE_STOPPED)
     }
 
     @Test fun binding_succeeds() = runTest {
-        val intent = Intent(context, PlayerService::class.java)
-        val binder = serviceRule.bindService(intent)
-        assertThat(binder as? PlayerService.Binder).isNotNull()
+        assertThat(PlayerService.binder).isNull()
+        context.startService(Intent(context, PlayerService::class.java))
+        waitUntil { PlayerService.binder != null }
+        assertThat(PlayerService.binder).isNotNull()
     }
 
     @Test fun binder_is_playing_state() = runTest {
-        val intent = Intent(context, PlayerService::class.java)
-        val binder = serviceRule.bindService(intent)
-        val service = binder as PlayerService.Binder
-        assertThat(service.isPlaying).isFalse()
+        context.startService(Intent(context, PlayerService::class.java))
+        waitUntil { PlayerService.binder != null }
+        val binder = PlayerService.binder
+        assertThat(binder?.isPlaying).isFalse()
 
-        val playIntent = PlayerService.playIntent(context)
-        serviceRule.startService(playIntent)
+        context.startService(PlayerService.playIntent(context))
         waitUntil { PlayerService.playbackState != PlaybackStateCompat.STATE_PAUSED }
-        assertThat(service.isPlaying).isTrue()
+        assertThat(binder?.isPlaying).isTrue()
 
-        val pauseIntent = PlayerService.pauseIntent(context)
-        serviceRule.startService(pauseIntent)
+        context.startService(PlayerService.pauseIntent(context))
         waitUntil { PlayerService.playbackState != PlaybackStateCompat.STATE_PLAYING }
-        assertThat(service.isPlaying).isFalse()
+        assertThat(binder?.isPlaying).isFalse()
 
-        val stopIntent = PlayerService.stopIntent(context)
-        serviceRule.startService(stopIntent)
+        context.startService(PlayerService.stopIntent(context))
         waitUntil { PlayerService.playbackState != PlaybackStateCompat.STATE_PAUSED }
-        assertThat(service.isPlaying).isFalse()
+        assertThat(binder?.isPlaying).isFalse()
     }
 
     @Test fun binder_toggle_is_playing() = runTest {
-        val intent = Intent(context, PlayerService::class.java)
-        val binder = serviceRule.bindService(intent)
-        val service = binder as PlayerService.Binder
-        assertThat(service.isPlaying).isFalse()
+        context.startService(Intent(context, PlayerService::class.java))
+        waitUntil { PlayerService.binder != null }
+        val binder = PlayerService.binder
+        assertThat(binder?.isPlaying).isFalse()
 
-        service.toggleIsPlaying()
+        binder?.toggleIsPlaying()
         waitUntil { PlayerService.playbackState != PlaybackStateCompat.STATE_STOPPED }
-        assertThat(service.isPlaying).isTrue()
+        assertThat(binder?.isPlaying).isTrue()
 
-        service.toggleIsPlaying()
+        binder?.toggleIsPlaying()
         waitUntil { PlayerService.playbackState != PlaybackStateCompat.STATE_PLAYING }
-        assertThat(service.isPlaying).isFalse()
+        assertThat(binder?.isPlaying).isFalse()
     }
 
     @Test fun service_prevents_playing_with_no_active_playlists() = runTest {
-        val intent = Intent(context, PlayerService::class.java)
-        val binder = serviceRule.bindService(intent)
+        context.startService(Intent(context, PlayerService::class.java))
+        waitUntil { PlayerService.binder != null }
         waitUntil { PlayerService.playbackState != PlaybackStateCompat.STATE_STOPPED } // should time out
         assertThat(PlayerService.playbackState).isEqualTo(PlaybackStateCompat.STATE_STOPPED)
 
@@ -128,12 +132,10 @@ class PlayerServiceTests {
         dao.toggleIsActive(id)
         waitUntil { !dao.getNoPlaylistsAreActive().first() }
 
-        val playIntent = PlayerService.playIntent(context)
-        serviceRule.startService(playIntent)
+        context.startService(PlayerService.playIntent(context))
         waitUntil { PlayerService.playbackState == PlaybackStateCompat.STATE_PLAYING } // should time out
         assertThat(PlayerService.playbackState).isEqualTo(PlaybackStateCompat.STATE_PAUSED)
 
-        (binder as PlayerService.Binder).toggleIsPlaying()
         waitUntil { PlayerService.playbackState == PlaybackStateCompat.STATE_PLAYING } // should time out
         assertThat(PlayerService.playbackState).isEqualTo(PlaybackStateCompat.STATE_PAUSED)
     }

@@ -1,0 +1,3 @@
+Fixed crash that would occur when the user reached Android's per app persisted URI permission limit by adding too many tracks.
+Added a request for the read storage permission if Android's per app persisted URI permission limit is exceeded, allowing them to add more tracks if they grant the permission.
+Fixed the quick settings tile sometimes not reflecting the actual playback state.

@@ -16,4 +16,9 @@
     <string name="feature_volume_boost_description">
         Select the ‘%1$s’ option from a track or playlist’s options menu to
         boost the volume by up to 30dB without modifying the source file.</string>
+
+    <string name="version_1_6_change_storage_permission_title">Exceed track limit</string>
+    <string name="version_1_6_change_storage_permission_explanation">If the normal number of allowed tracks is exceeded, granting the app the read storage permission will allow any number of tracks to be added.</string>
+    <string name="version_1_6_change_bug_fixes_title">Bug fixes</string>
+    <string name="version_1_6_change_bug_fixes_description">Fixed crash when exceeding the maximum number of allowed tracks.\nFixed the quick settings tile not updating its state.</string>
 </resources>
