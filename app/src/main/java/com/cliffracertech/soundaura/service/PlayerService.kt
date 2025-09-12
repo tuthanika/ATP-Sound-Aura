@@ -453,7 +453,7 @@ class PlayerService: LifecycleService() {
                     listener.onPlaybackStateChange(value)
             }
 
-        var binder: Binder? = null
+        var binder by mutableStateOf<Binder?>(null)
             private set
     }
 }
