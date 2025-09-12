@@ -189,11 +189,11 @@ class MediaControllerViewModelTests {
         dataStore.edit { it.remove(prefKey) }
 
         var latestMessage: MessageHandler.Message? = null
-        messageHandler.messages.onEach { latestMessage = it }
-                               .launchIn(backgroundScope)
-
+        val job = messageHandler.messages.onEach { latestMessage = it }
+                                         .launchIn(testScopeRule.scope)
         playButton.onClick()
         waitUntil { latestMessage != null }
+        job.cancel()
         assertThat(latestMessage?.stringResource?.stringResId)
             .isEqualTo(R.string.play_button_long_click_hint_text)
         assertThat(dataStore.data.first()[prefKey]).isTrue()
@@ -449,7 +449,7 @@ class MediaControllerViewModelTests {
         presetList.onDeleteClick(testPresetNames[1])
         instance.shownDialog?.onDismissRequest?.invoke()
         assertThat(instance.shownDialog).isNull()
-        waitUntil { currentPresets?.size == 2 }
+        waitUntil { currentPresets?.size == 2 } // should time out
         assertThat(currentPresetNames).containsExactlyElementsIn(testPresetNames)
     }
 
