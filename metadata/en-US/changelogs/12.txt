@@ -1,0 +1,2 @@
+Fix failing F-droid build.
+Fix auto-stop timer not showing in app.
