@@ -69,6 +69,9 @@ import com.cliffracertech.soundaura.dialog.SoundAuraDialog
                     stringResource(R.string.version_1_6_change_storage_permission_explanation),
                 stringResource(R.string.version_1_6_change_bug_fixes_title) to
                     stringResource(R.string.version_1_6_change_bug_fixes_description))
+            // 12 -> Version code 12 is not addressed here. Due to it being a minor bug fix
+            //       released quickly after 11, showing its changes might prevent users from
+            //       seeing the more important 11 release notes.
             else -> emptyList()
         }
         features.forEach { (title, description) ->
