@@ -74,6 +74,7 @@ class TestPermissionHandler: UriPermissionHandler {
 class AndroidUriPermissionHandler @Inject constructor(
     @ApplicationContext private val context: Context,
 ): UriPermissionHandler {
+    private val modeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION
     private val hasStoragePermission get() = context.checkSelfPermission(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
                 Manifest.permission.READ_MEDIA_AUDIO
@@ -93,8 +94,7 @@ class AndroidUriPermissionHandler @Inject constructor(
         else -> {
             var successfulGrants = 0
             for (uri in uris) try {
-                context.contentResolver.takePersistableUriPermission(
-                    uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                context.contentResolver.takePersistableUriPermission(uri, modeFlags)
                 successfulGrants++
             } catch (e: SecurityException) {
                 logd("Attempted to obtain a persistable permission for " +
@@ -108,7 +108,7 @@ class AndroidUriPermissionHandler @Inject constructor(
 
     override fun releasePermissionsFor(uris: List<Uri>) {
         for (uri in uris) try {
-            context.contentResolver.releasePersistableUriPermission(uri, 0)
+            context.contentResolver.releasePersistableUriPermission(uri, modeFlags)
         } catch (e: SecurityException) {
             logd("Attempted to release Uri permission for $uri " +
                  "when no permission was previously granted")
