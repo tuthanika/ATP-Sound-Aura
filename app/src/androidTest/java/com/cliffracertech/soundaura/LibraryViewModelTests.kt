@@ -61,7 +61,7 @@ class LibraryViewModelTests {
         searchQueryState = SearchQueryState()
         instance = LibraryViewModel(
             ReadLibraryUseCase(dataStore, searchQueryState, dao),
-            ModifyLibraryUseCase(permissionHandler, messageHandler, dao),
+            ModifyLibraryUseCase(permissionHandler, dao),
             searchQueryState, messageHandler, playbackState)
     }
 
