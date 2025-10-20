@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -252,12 +253,48 @@ sealed class LibraryState {
             target, existingTracks, shuffleEnabled, ::dismissDialog,
             onAddFilesClick = {
                 showFileChooser(target, existingTracks, shuffleEnabled)
-            }, onConfirm = { newShuffle, newTrackList ->
-                dismissDialog()
+            }, onConfirm = { newShuffle, newTracks ->
                 scope.launchIO {
-                    modifyLibrary.setPlaylistShuffleAndTracks(
-                        target.id, newShuffle, newTrackList)
+                    val result = modifyLibrary.setPlaylistShuffleAndTracks(
+                        target.id, newShuffle, newTracks)
+                    withContext(Dispatcher.Immediate) {
+                        when (result) {
+                            is ModifyLibraryUseCase.Result.Success ->
+                                dismissDialog()
+                            is ModifyLibraryUseCase.Result.NewTracksNotAdded ->
+                                showRequestStoragePermission(
+                                    target, shuffleEnabled, newTracks, result)
+                        }
+                    }
                 }
+            })
+    }
+
+    private fun showRequestStoragePermission(
+        target: Playlist,
+        shuffleEnabled: Boolean,
+        existingTracks: List<Track>,
+        result: ModifyLibraryUseCase.Result.NewTracksNotAdded,
+    ) {
+        shownDialog = PlaylistDialog.RequestStoragePermissionExplanation(
+            target = target,
+            permissionsUsed = result.permissionsUsed,
+            permissionsAllowed = result.permissionAllowance,
+            onDismissRequest = ::dismissDialog,
+            onOkClick = {
+                shownDialog = PlaylistDialog.RequestStoragePermission(
+                    target = target,
+                    onDismissRequest = ::dismissDialog,
+                    onResult = { permissionGranted ->
+                        dismissDialog()
+                        if (permissionGranted) scope.launchIO {
+                            modifyLibrary.setPlaylistShuffleAndTracks(
+                                target.id, shuffleEnabled,
+                                existingTracks + result.unaddedUris.map(::Track))
+                        } else messageHandler.postMessage(
+                            stringResId = R.string.cant_add_playlist_tracks_warning,
+                            duration = SnackbarDuration.Long)
+                    })
             })
     }
 }

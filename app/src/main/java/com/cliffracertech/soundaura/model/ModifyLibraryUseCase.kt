@@ -3,8 +3,7 @@
  * the project's root directory to see the full license. */
 package com.cliffracertech.soundaura.model
 
-import androidx.compose.material.SnackbarDuration
-import com.cliffracertech.soundaura.R
+import android.net.Uri
 import com.cliffracertech.soundaura.dialog.ValidatedNamingState
 import com.cliffracertech.soundaura.model.database.Playlist
 import com.cliffracertech.soundaura.model.database.PlaylistDao
@@ -16,14 +15,12 @@ import javax.inject.Inject
 /** A container of methods that modify the app's library of playlists. */
 class ModifyLibraryUseCase(
     private val permissionHandler: UriPermissionHandler,
-    private val messageHandler: MessageHandler,
     private val dao: PlaylistDao,
 ) {
     @Inject constructor(
         permissionHandler: AndroidUriPermissionHandler,
-        messageHandler: MessageHandler,
         dao: PlaylistDao
-    ): this(permissionHandler as UriPermissionHandler, messageHandler, dao)
+    ): this(permissionHandler as UriPermissionHandler, dao)
 
     suspend fun togglePlaylistIsActive(playlistId: Long) {
         dao.toggleIsActive(playlistId)
@@ -53,6 +50,23 @@ class ModifyLibraryUseCase(
             onFinished()
         })
 
+    /** The two subtypes, [Success] and [NewTracksNotAdded], represent
+     * the possible results for calls to [setPlaylistShuffleAndTracks]. */
+    sealed class Result {
+        /** The operation succeeded. */
+        data object Success: Result()
+
+        /** The shuffle was modified, and the to-be-removed tracks were removed,
+         * but the new tracks were not added. The properties [permissionsUsed]
+         * and [permissionAllowance] can help explain the reason for the failure.
+         * The uris of the tracks that could not be added are provided in [unaddedUris].*/
+        data class NewTracksNotAdded(
+            val unaddedUris: List<Uri>,
+            val permissionsUsed: Int,
+            val permissionAllowance: Int
+        ): Result()
+    }
+
     /**
      * Update the [Playlist] identified by [playlistId] to have a shuffle on/
      * off state matching [shuffle], and to have a track list matching [tracks].
@@ -67,26 +81,32 @@ class ModifyLibraryUseCase(
         playlistId: Long,
         shuffle: Boolean,
         tracks: List<Track>
-    ) {
+    ): Result {
         val uris = tracks.map(Track::uri)
         val newUris = dao.filterNewUris(uris)
-        val removableUris = dao.getUniqueUrisNotIn(uris, playlistId)
-        val postOpPermissionAllowance = permissionHandler.remainingAllowance +
-                                        removableUris.size - newUris.size
-        if (postOpPermissionAllowance < 0) {
-            messageHandler.postMessage(
-                R.string.cant_modify_playlist_tracks_warning,
-                duration = SnackbarDuration.Long)
-            dao.setPlaylistShuffle(playlistId, shuffle)
-        } else {
-            val removedUris = dao.setPlaylistShuffleAndTracks(
+        val releasableUris = dao.getUniqueUrisNotIn(uris, playlistId)
+        permissionHandler.releasePermissionsFor(releasableUris)
+
+        val acquiredPermissions = permissionHandler.acquirePermissionsFor(newUris)
+        return if (acquiredPermissions) {
+            dao.setPlaylistShuffleAndTracks(
                 playlistId = playlistId,
                 shuffle = shuffle,
                 tracks = tracks,
                 newUris = newUris,
-                removableUris = removableUris)
-            permissionHandler.releasePermissionsFor(removedUris)
-            permissionHandler.acquirePermissionsFor(newUris)
+                removableUris = releasableUris)
+            Result.Success
+        } else {
+            dao.setPlaylistShuffleAndTracks(
+                playlistId = playlistId,
+                shuffle = shuffle,
+                tracks = tracks.filter { it.uri !in newUris.toSet() },
+                newUris = emptyList(),
+                removableUris = releasableUris)
+            Result.NewTracksNotAdded(
+                unaddedUris = newUris,
+                permissionsUsed = permissionHandler.usedAllowance,
+                permissionAllowance = permissionHandler.totalAllowance)
         }
     }
 

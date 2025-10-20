@@ -222,8 +222,9 @@ sealed class AddButtonDialogState(
             }))
     }
 
-    /** An explanation for why the storage permission is needed is being presented.
-     * The [text] [StringResource] property should be resolved and display to the user. */
+    /** An explanation for why the storage permission is needed is being
+     * presented. The [text] [StringResource] property should be resolved
+     * and displayed to the user. */
     class RequestStoragePermissionExplanation(
         onDismissRequest: () -> Unit,
         permissionsUsed: Int,
