@@ -3,6 +3,7 @@
  * the project's root directory to see the full license. */
 package com.cliffracertech.soundaura.model
 
+import android.net.Uri
 import com.cliffracertech.soundaura.dialog.ValidatedNamingState
 import com.cliffracertech.soundaura.model.database.Playlist
 import com.cliffracertech.soundaura.model.database.PlaylistDao
@@ -57,8 +58,10 @@ class ModifyLibraryUseCase(
 
         /** The shuffle was modified, and the to-be-removed tracks were removed,
          * but the new tracks were not added. The properties [permissionsUsed]
-         * and [permissionAllowance] can help explain the reason for the failure. */
+         * and [permissionAllowance] can help explain the reason for the failure.
+         * The uris of the tracks that could not be added are provided in [unaddedUris].*/
         data class NewTracksNotAdded(
+            val unaddedUris: List<Uri>,
             val permissionsUsed: Int,
             val permissionAllowance: Int
         ): Result()
@@ -101,6 +104,7 @@ class ModifyLibraryUseCase(
                 newUris = emptyList(),
                 removableUris = releasableUris)
             Result.NewTracksNotAdded(
+                unaddedUris = newUris,
                 permissionsUsed = permissionHandler.usedAllowance,
                 permissionAllowance = permissionHandler.totalAllowance)
         }
