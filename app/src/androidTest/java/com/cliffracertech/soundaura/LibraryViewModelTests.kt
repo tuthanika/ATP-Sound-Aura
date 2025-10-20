@@ -81,6 +81,7 @@ class LibraryViewModelTests {
     private val renameDialog get() = instance.shownDialog as PlaylistDialog.Rename
     private val fileChooser get() = instance.shownDialog as PlaylistDialog.FileChooser
     private val playlistOptionsDialog get() = instance.shownDialog as PlaylistDialog.PlaylistOptions
+    private val requestStoragePermissionExplanationDialog get() = instance.shownDialog as PlaylistDialog.RequestStoragePermissionExplanation
     private val removeDialog get() = instance.shownDialog as PlaylistDialog.Remove
 
     private val emptyState get() = instance.viewState as LibraryState.Empty
@@ -89,6 +90,8 @@ class LibraryViewModelTests {
     private suspend fun PlaylistDao.getPlaylistUris(id: Long) = getPlaylistTracks(id).map(Track::uri)
 
     private suspend fun insertTestPlaylists() {
+        permissionHandler.acquirePermissionsFor(testUris)
+
         // Of the five names in testPlaylistNames, the first four will
         // be used for four single track playlists. The last playlist
         // name will be used for a multi-track playlist containing all
@@ -406,6 +409,45 @@ class LibraryViewModelTests {
         assertThat(instance.shownDialog).isNull()
         actualUris = dao.getPlaylistUris(testPlaylists[4].id)
         assertThat(actualUris).containsExactlyElementsIn(expectedUris).inOrder()
+    }
+
+    @Test fun multi_track_playlist_file_chooser_confirmation_over_file_limit() = runTest {
+        insertTestPlaylists()
+        contentState.playlistViewCallback.onExtraOptionsClick(testPlaylists[4])
+        waitUntil { instance.shownDialog != null }
+        playlistOptionsDialog.onAddFilesClick()
+        // we add 9 more tracks so the total will be 13, over the
+        // artificially low TestUriPermissionHandler limit of 12
+        val newUris = List(9) { "new uri $it".toUri() }
+        fileChooser.onFilesChosen(newUris)
+
+        playlistOptionsDialog.onFinishClick()
+        waitUntil { instance.shownDialog !is PlaylistDialog.PlaylistOptions }
+        assertThat(instance.shownDialog).isInstanceOf(
+            PlaylistDialog.RequestStoragePermissionExplanation::class)
+
+        requestStoragePermissionExplanationDialog.onOkClick()
+        waitUntil { instance.shownDialog !is PlaylistDialog.RequestStoragePermissionExplanation}
+        assertThat(instance.shownDialog).isInstanceOf(
+            PlaylistDialog.RequestStoragePermission::class)
+    }
+
+    @Test fun request_storage_permission_rejection() = runTest {
+        insertTestPlaylists()
+        contentState.playlistViewCallback.onExtraOptionsClick(testPlaylists[4])
+        waitUntil { instance.shownDialog != null }
+        playlistOptionsDialog.onAddFilesClick()
+        // we add 9 more tracks so the total will be 13, over the
+        // artificially low TestUriPermissionHandler limit of 12
+        val newUris = List(9) { "new uri $it".toUri() }
+        fileChooser.onFilesChosen(newUris)
+        playlistOptionsDialog.onFinishClick()
+        waitUntil { instance.shownDialog is PlaylistDialog.RequestStoragePermissionExplanation }
+
+        requestStoragePermissionExplanationDialog.onDismissRequest()
+        waitUntil { instance.shownDialog !is PlaylistDialog.RequestStoragePermissionExplanation }
+        assertThat(instance.shownDialog).isNull()
+        assertThat(dao.getPlaylistUris(testPlaylists[4].id)).containsExactlyElementsIn(testUris)
     }
 
     @Test fun remove_dialog_appearance() = runTest {
