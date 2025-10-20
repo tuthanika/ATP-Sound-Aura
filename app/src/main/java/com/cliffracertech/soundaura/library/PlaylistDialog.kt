@@ -3,7 +3,11 @@
  * the project's root directory to see the full license. */
 package com.cliffracertech.soundaura.library
 
+import android.Manifest
 import android.net.Uri
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,11 +17,13 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Slider
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -37,10 +43,9 @@ import com.cliffracertech.soundaura.model.StringResource
 import com.cliffracertech.soundaura.model.database.Track
 import com.cliffracertech.soundaura.ui.MarqueeText
 
-/** The subclasses of PlaylistDialog (i.e. [Rename], [PlaylistOptions],
- * and [Remove]) contain all of the state and callbacks needed to display
- * a [Playlist] related dialog. The [onDismissRequest] property should be
- * used for the displayed dialog's onDismissRequest. */
+/** The subclasses of PlaylistDialog contain all of the state and callbacks
+ * needed to display a [Playlist] related dialog. The [onDismissRequest]
+ * property should be used for the displayed dialog's onDismissRequest. */
 sealed class PlaylistDialog(
     val target: Playlist,
     val onDismissRequest: () -> Unit,
@@ -152,6 +157,29 @@ sealed class PlaylistDialog(
         }
     }
 
+    /** An explanation for why the storage permission is needed is being
+     * presented. The [text] [StringResource] property should be resolved
+     * and displayed to the user. */
+    class RequestStoragePermissionExplanation(
+        target: Playlist,
+        permissionsUsed: Int,
+        permissionsAllowed: Int,
+        onDismissRequest: () -> Unit,
+        val onOkClick: () -> Unit
+    ): PlaylistDialog(target, onDismissRequest) {
+        val text = StringResource(
+            string = null,
+            stringResId = R.string.playlist_options_request_storage_permission_explanation,
+            permissionsUsed, permissionsAllowed)
+    }
+
+    /** The storage permission request is being presented. */
+    class RequestStoragePermission(
+        target: Playlist,
+        onDismissRequest: () -> Unit,
+        val onResult: (Boolean) -> Unit,
+    ): PlaylistDialog(target, onDismissRequest)
+
     /**
      * The 'boost volume' dialog for a playlist. The property [volumeBoost]
      * should be used as the current value for a slider with a range of 0 to
@@ -211,6 +239,10 @@ sealed class PlaylistDialog(
     is PlaylistOptions -> PlaylistOptionsDialog(
         modifier = modifier,
         state = dialogState)
+    is PlaylistDialog.RequestStoragePermissionExplanation ->
+        RequestStoragePermissionExplanation(dialogState, modifier)
+    is PlaylistDialog.RequestStoragePermission ->
+        AccessAudioFilesPermissionRequester(onPermissionGranted = dialogState.onResult)
     is PlaylistDialog.BoostVolume -> BoostVolumeDialog(
         modifier = modifier,
         state = dialogState)
@@ -257,6 +289,27 @@ sealed class PlaylistDialog(
         onShuffleClick = state.onShuffleSwitchClick,
         mutablePlaylist = state.mutablePlaylist,
         onAddButtonClick = state.onAddFilesClick)
+}
+
+/** Show a dialog explaining why the read storage permission is needed. */
+@Composable fun RequestStoragePermissionExplanation(
+    state: PlaylistDialog.RequestStoragePermissionExplanation,
+    modifier: Modifier = Modifier
+) = SoundAuraDialog(
+    modifier = modifier,
+    title = stringResource(R.string.add_local_files_request_storage_permission_title),
+    text = state.text.resolve(LocalContext.current),
+    onDismissRequest = state.onDismissRequest,
+    onConfirm = state.onOkClick)
+
+@Composable fun AccessAudioFilesPermissionRequester(onPermissionGranted: (Boolean) -> Unit) {
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = onPermissionGranted)
+    val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                         Manifest.permission.READ_MEDIA_AUDIO
+                     else Manifest.permission.READ_EXTERNAL_STORAGE
+    LaunchedEffect(Unit) { launcher.launch(permission) }
 }
 
 /** Show a dialog to change a playlist's volume boost. */
