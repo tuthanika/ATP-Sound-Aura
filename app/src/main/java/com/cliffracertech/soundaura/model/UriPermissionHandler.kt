@@ -31,14 +31,11 @@ interface UriPermissionHandler {
     /**
      * Acquire permissions for each file [Uri] in [uris], if space permits. If
      * the size of [uris] is greater than the remaining permission count, then
-     * no permissions will be acquired. If [releasableUris] is not null, then
-     * then permissions for each [Uri]s in it be released before the new
-     * permissions are acquired.
+     * no permissions will be acquired.
      *
-     * @return Whether all of the permissions were successfully acquired. The
-     *         [Uri]s in [releasableUris] will be released in either case.
+     * @return Whether all of the permissions were successfully acquired
      */
-    fun acquirePermissionsFor(uris: List<Uri>, releasableUris: List<Uri>? = null): Boolean
+    fun acquirePermissionsFor(uris: List<Uri>): Boolean
 
     /** Release any persisted permissions for the [Uri]s in [uris]. */
     fun releasePermissionsFor(uris: List<Uri>)
@@ -52,16 +49,11 @@ class TestPermissionHandler: UriPermissionHandler {
     override val totalAllowance = 12
     override val usedAllowance get() = grantedPermissions.size
 
-    override fun acquirePermissionsFor(
-        uris: List<Uri>,
-        releasableUris: List<Uri>?
-    ): Boolean {
+    override fun acquirePermissionsFor(uris: List<Uri>): Boolean {
         val newUris = uris.filterNot(grantedPermissions::contains)
-        val hasEnoughSpace = (remainingAllowance + (releasableUris?.size ?: 0)) >= uris.size
-        if (hasEnoughSpace) {
-            releasableUris?.let(grantedPermissions::removeAll)
+        val hasEnoughSpace = remainingAllowance >= uris.size
+        if (hasEnoughSpace)
             grantedPermissions.addAll(newUris)
-        }
         return hasEnoughSpace
     }
     override fun releasePermissionsFor(uris: List<Uri>) {
@@ -96,17 +88,10 @@ class AndroidUriPermissionHandler @Inject constructor(
     override val usedAllowance get() =
         context.contentResolver.persistedUriPermissions.size
 
-    override fun acquirePermissionsFor(
-        uris: List<Uri>,
-        releasableUris: List<Uri>?
-    ): Boolean = when {
-        hasStoragePermission ->
-            true
-        (remainingAllowance + (releasableUris?.size ?: 0)) < uris.size ->
-            false
+    override fun acquirePermissionsFor(uris: List<Uri>): Boolean = when {
+        hasStoragePermission -> true
+        remainingAllowance < uris.size -> false
         else -> {
-            releasableUris?.let(::releasePermissionsFor)
-
             var successfulGrants = 0
             for (uri in uris) try {
                 context.contentResolver.takePersistableUriPermission(uri, modeFlags)
