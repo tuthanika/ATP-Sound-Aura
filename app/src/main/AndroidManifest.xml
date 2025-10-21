@@ -12,7 +12,8 @@
         android:name="SoundAuraApplication"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/Theme.SoundAura">
+        android:theme="@style/Theme.SoundAura"
+        android:enableOnBackInvokedCallback="false">
 
         <activity
             android:name=".MainActivity"

@@ -10,14 +10,14 @@ plugins {
 
 android {
     namespace = "com.cliffracertech.soundaura"
-    compileSdk = 34
+    compileSdk = 36
     sourceSets {
         getByName("androidTest").assets.srcDir("$projectDir/schemas")
     }
     defaultConfig {
         applicationId = "com.cliffracertech.soundaura"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 12
         versionName = "1.6.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
