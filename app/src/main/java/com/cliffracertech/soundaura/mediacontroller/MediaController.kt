@@ -83,7 +83,7 @@ class ActivePresetViewState(
         modifier = modifier
             .size(sizes.activePresetSize)
             .clip(sizes.activePresetShape)
-            .clickable(true, onClickLabel, Role.Button, state.onClick)
+            .clickable(true, onClickLabel, Role.Button, null, state.onClick)
             .padding(start = 12.dp, end = 8.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -134,7 +134,7 @@ class ActivePresetViewState(
             alpha = appearanceProgress
             translationX = translationPercent * size.width.toPx()
         }.clip(sizes.stopTimerShape)
-        .clickable(true, clickLabel, Role.Button, onClick),
+        .clickable(true, clickLabel, Role.Button, null, onClick),
     ) {
         VerticalDivider(heightFraction = 0.8f)
         StopTimer(lastNonNullStopTime, Modifier.fillMaxSize())
