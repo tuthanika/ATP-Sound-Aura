@@ -52,9 +52,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -74,6 +74,9 @@ import com.cliffracertech.soundaura.ui.minTouchTargetSize
 import com.cliffracertech.soundaura.ui.theme.SoundAuraTheme
 import com.mikepenz.aboutlibraries.ui.compose.LibrariesContainer
 import com.mikepenz.aboutlibraries.ui.compose.LibraryDefaults
+import com.mikepenz.aboutlibraries.ui.compose.android.produceLibraries
+import com.mikepenz.aboutlibraries.ui.compose.chipColors
+import com.mikepenz.aboutlibraries.ui.compose.libraryColors
 
 /**
  * Launch a dialog to explain the consequences of the 'Play in background' setting.
@@ -352,20 +355,22 @@ import com.mikepenz.aboutlibraries.ui.compose.LibraryDefaults
     onDismissRequest = onDismissRequest,
     showCancelButton = false,
 ) {
-    val config = LocalConfiguration.current
+    val libraries by produceLibraries(R.raw.aboutlibraries)
     // Because SoundAuraDialog places its content inside a scrollable container,
     // and LibrariesContainer apparently uses a LazyColumn, restricting the max
     // height prevents a java.lang.IllegalStateException: Vertically scrollable
     // component was measured with an infinity maximum height constraints crash.
     LibrariesContainer(
+        libraries = libraries,
         modifier = Modifier
             .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
-            .heightIn(max = config.screenHeightDp.dp),
+            .heightIn(max = LocalWindowInfo.current.containerSize.height.dp),
         colors = LibraryDefaults.libraryColors(
-            backgroundColor = MaterialTheme.colors.surface,
-            contentColor = MaterialTheme.colors.onSurface,
-            badgeBackgroundColor = MaterialTheme.colors.secondary,
-            badgeContentColor = MaterialTheme.colors.onSecondary
+            libraryBackgroundColor = MaterialTheme.colors.surface,
+            libraryContentColor = MaterialTheme.colors.onSurface,
+            versionChipColors = LibraryDefaults.chipColors(MaterialTheme.colors.secondary),
+            licenseChipColors = LibraryDefaults.chipColors(MaterialTheme.colors.secondary),
+            fundingChipColors = LibraryDefaults.chipColors(MaterialTheme.colors.secondary)
         ))
 }
 
