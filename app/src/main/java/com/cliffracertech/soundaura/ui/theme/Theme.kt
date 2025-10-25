@@ -8,8 +8,6 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.darkColors
 import androidx.compose.material.lightColors
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 private val lightColorPalette = lightColors(
     primary = LightThemePrimary,
@@ -38,14 +36,9 @@ private val darkColorPalette = darkColors(
 @Composable fun SoundAuraTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
-) {
-    val systemUiController = rememberSystemUiController()
-    systemUiController.setSystemBarsColor(Color.Transparent)
-
-    MaterialTheme(
-        colors = if (darkTheme) darkColorPalette
-                 else           lightColorPalette,
-        typography = Typography,
-        shapes = Shapes,
-        content = content)
-}
+) = MaterialTheme(
+    colors = if (darkTheme) darkColorPalette
+             else           lightColorPalette,
+    typography = Typography,
+    shapes = Shapes,
+    content = content)
