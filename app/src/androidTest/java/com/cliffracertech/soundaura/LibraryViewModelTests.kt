@@ -163,7 +163,7 @@ class LibraryViewModelTests {
         dataStore.edit(showActivePlaylistsFirstKey, true)
         dao.toggleIsActive(testPlaylists[1].id)
         dao.toggleIsActive(testPlaylists[3].id)
-        waitUntil { contentState.playlists?.first()?.id == testPlaylists[1].id }
+        waitUntil { contentState.playlists?.get(2)?.id == testPlaylists[3].id }
         assertThat(contentState.playlists?.map(Playlist::name)).containsExactly(
             testPlaylistNames[1], testPlaylistNames[3], testPlaylistNames[0],
             testPlaylistNames[2], testPlaylistNames[4]).inOrder()
