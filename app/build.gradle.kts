@@ -1,23 +1,27 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.kapt")
     id("dagger.hilt.android.plugin")
-    id("com.mikepenz.aboutlibraries.plugin")
+    id("com.mikepenz.aboutlibraries.plugin.android")
     id("com.google.devtools.ksp")
 }
 
+kotlin.compilerOptions.jvmTarget = JvmTarget.fromTarget("21")
+
 android {
     namespace = "com.cliffracertech.soundaura"
-    compileSdk = 34
-    sourceSets {
-        getByName("androidTest").assets.srcDir("$projectDir/schemas")
-    }
+    compileSdk = 36
+    sourceSets.getByName("androidTest")
+        .assets.srcDir("$projectDir/schemas")
+
     defaultConfig {
         applicationId = "com.cliffracertech.soundaura"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 12
         versionName = "1.6.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -33,7 +37,8 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             isDebuggable = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(getDefaultProguardFile(
+                "proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
     compileOptions {
@@ -41,21 +46,13 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
         isCoreLibraryDesugaringEnabled = true
     }
-    kotlinOptions {
-        jvmTarget = "21"
-    }
     buildFeatures {
         compose = true
         buildConfig = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.15"
-    }
-    packaging {
-        resources {
-            excludes += "/META-INF/*"
-        }
-    }
+    composeOptions.kotlinCompilerExtensionVersion = "1.5.15"
+
+    packaging.resources.excludes += "/META-INF/*"
 
     testOptions.unitTests.isIncludeAndroidResources = true
 }
@@ -71,61 +68,52 @@ ksp {
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    compilerOptions {
-        optIn.addAll(
-            "kotlin.RequiresOptIn",
-            "kotlinx.coroutines.ExperimentalCoroutinesApi",
-            "androidx.compose.animation.ExperimentalAnimationApi",
-            "androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi",
-            "androidx.compose.ui.ExperimentalComposeUiApi",
-            "androidx.compose.foundation.ExperimentalFoundationApi",
-            "androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi")
-    }
+    compilerOptions.optIn.addAll(
+        "androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi")
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.compose.ui:ui:1.5.4")
-    implementation("androidx.compose.material:material:1.5.4")
-    implementation("androidx.compose.ui:ui-tooling-preview:1.5.4")
-    implementation("androidx.compose.animation:animation:1.5.4")
-    implementation("androidx.compose.animation:animation-graphics:1.5.4")
-    implementation("androidx.appcompat:appcompat:1.7.0")
-    implementation("com.google.android.material:material:1.12.0")
-    implementation("androidx.activity:activity-compose:1.9.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
-    implementation("androidx.lifecycle:lifecycle-service:2.8.7")
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    implementation("androidx.compose.material:material-icons-extended:1.7.6")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
-    implementation("androidx.documentfile:documentfile:1.0.1")
-    implementation("com.google.accompanist:accompanist-systemuicontroller:0.28.0")
-    implementation("com.google.accompanist:accompanist-insets:0.28.0")
-    implementation("com.google.accompanist:accompanist-insets-ui:0.28.0")
-    implementation("androidx.media:media:1.7.0")
-    implementation("androidx.datastore:datastore-preferences:1.1.2")
-    implementation("com.google.dagger:hilt-android:2.55")
-    implementation("com.mikepenz:aboutlibraries-core:10.9.2")
-    implementation("com.mikepenz:aboutlibraries-compose:10.9.2")
-    implementation("androidx.compose.material3:material3-window-size-class:1.3.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.6")
-    implementation("org.burnoutcrew.composereorderable:reorderable:0.9.6")
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    implementation("androidx.core:core-ktx:1.17.0")
+    implementation("androidx.compose.ui:ui:1.9.4")
+    implementation("androidx.compose.material:material:1.9.4")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.9.4")
+    implementation("androidx.compose.animation:animation:1.9.4")
+    implementation("androidx.compose.animation:animation-graphics:1.9.4")
+    implementation("androidx.appcompat:appcompat:1.7.1")
+    implementation("com.google.android.material:material:1.13.0")
+    implementation("androidx.activity:activity-compose:1.11.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.4")
+    implementation("androidx.lifecycle:lifecycle-service:2.9.4")
+    implementation("androidx.room:room-runtime:2.8.3")
+    implementation("androidx.room:room-ktx:2.8.3")
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.4")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
+    implementation("androidx.documentfile:documentfile:1.1.0")
+    implementation("com.google.accompanist:accompanist-insets:0.30.1")
+    implementation("com.google.accompanist:accompanist-insets-ui:0.36.0")
+    implementation("androidx.media:media:1.7.1")
+    implementation("androidx.datastore:datastore-preferences:1.1.7")
+    implementation("com.google.dagger:hilt-android:2.57.2")
+    implementation("com.mikepenz:aboutlibraries-core:13.1.0")
+    implementation("com.mikepenz:aboutlibraries-compose:13.1.0")
+    implementation("androidx.compose.material3:material3-window-size-class:1.4.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
+    implementation("sh.calvin.reorderable:reorderable:3.0.0")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 
-    ksp("androidx.room:room-compiler:2.6.1")
-    kapt("com.google.dagger:hilt-compiler:2.55")
+    ksp("androidx.room:room-compiler:2.8.3")
+    kapt("com.google.dagger:hilt-compiler:2.57.2")
 
     testImplementation("junit:junit:4.13.2")
-    testImplementation("androidx.test.ext:truth:1.6.0")
+    testImplementation("androidx.test.ext:truth:1.7.0")
 
-    debugImplementation("androidx.compose.ui:ui-tooling:1.7.6")
-    androidTestImplementation("androidx.test.ext:truth:1.6.0")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
-    androidTestImplementation("androidx.room:room-testing:2.6.1")
-    androidTestImplementation("androidx.test:rules:1.6.1")
-    androidTestImplementation("com.google.dagger:hilt-android-testing:2.48")
-    kaptAndroidTest("com.google.dagger:hilt-android-compiler:2.48")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.9.4")
+    androidTestImplementation("androidx.test.ext:truth:1.7.0")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    androidTestImplementation("androidx.room:room-testing:2.8.3")
+    androidTestImplementation("androidx.test:rules:1.7.0")
+    androidTestImplementation("com.google.dagger:hilt-android-testing:2.57.2")
+    kaptAndroidTest("com.google.dagger:hilt-android-compiler:2.57.2")
 }

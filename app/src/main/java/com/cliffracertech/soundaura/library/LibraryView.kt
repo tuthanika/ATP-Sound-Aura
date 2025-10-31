@@ -125,7 +125,7 @@ sealed class LibraryState {
             ) {
                 items(items, key = Playlist::name::get) { playlist ->
                     PlaylistView(playlist, viewState.playlistViewCallback,
-                                 Modifier.animateItemPlacement())
+                                 Modifier.animateItem())
                 }
             }
         }

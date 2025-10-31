@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
@@ -56,8 +57,8 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -74,10 +75,8 @@ import com.cliffracertech.soundaura.ui.SimpleIconButton
 import com.cliffracertech.soundaura.ui.VerticalDivider
 import com.cliffracertech.soundaura.ui.minTouchTargetSize
 import com.cliffracertech.soundaura.ui.theme.SoundAuraTheme
-import org.burnoutcrew.reorderable.ReorderableItem
-import org.burnoutcrew.reorderable.detectReorder
-import org.burnoutcrew.reorderable.rememberReorderableLazyListState
-import org.burnoutcrew.reorderable.reorderable
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 import java.io.File
 
 @Composable fun <T>overshootTween(
@@ -233,7 +232,7 @@ class MutablePlaylist(tracks: List<Track>) {
     // dialog's title, shuffle switch, and button row should all
     // have heights of 48.dp, for a total height of 48.dp * 3. An
     // extra 48.dp padding added to it makes it 48.dp * 4 = 192.dp.
-    val maxHeight = LocalConfiguration.current.screenHeightDp.dp - 192.dp
+    val maxHeight = LocalWindowInfo.current.containerSize.height.dp - 192.dp
     PlaylistOptionsTrackList(
         modifier = Modifier.heightIn(max = maxHeight),
         mutablePlaylist = mutablePlaylist,
@@ -302,13 +301,11 @@ class MutablePlaylist(tracks: List<Track>) {
     mutablePlaylist: MutablePlaylist,
     allowDeletion: Boolean,
 ) {
-    val reorderableState = rememberReorderableLazyListState(onMove = { from, to ->
+    val lazyListState = rememberLazyListState()
+    val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
         mutablePlaylist.moveTrack(from.index, to.index)
-    })
-    LazyColumn(
-        modifier = modifier.reorderable(reorderableState),
-        state = reorderableState.listState,
-    ) {
+    }
+    LazyColumn(modifier, lazyListState) {
         itemsIndexed(
             items = mutablePlaylist.tracks,
             key = { _, track -> track.uri }
@@ -341,7 +338,7 @@ class MutablePlaylist(tracks: List<Track>) {
                             R.string.playlist_track_handle_description, name),
                         modifier = Modifier
                             .minTouchTargetSize()
-                            .detectReorder(reorderableState)
+                            .draggableHandle()
                             .padding(10.dp),
                         tint = if (track.hasError) MaterialTheme.colors.error
                                else                LocalContentColor.current)
