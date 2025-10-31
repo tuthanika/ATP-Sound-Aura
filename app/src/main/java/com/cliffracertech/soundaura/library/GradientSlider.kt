@@ -58,7 +58,7 @@ import androidx.compose.material.ContentAlpha
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.SliderColors
 import androidx.compose.material.SliderDefaults
-import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -332,7 +332,7 @@ private fun SliderThumb(
             startDragImmediately = draggableState.isDragging,
             state = draggableState)
         .indication(interactionSource,
-            rememberRipple(bounded = false, radius = ThumbRippleRadius))
+            ripple(bounded = false, radius = ThumbRippleRadius))
     ) {
         val interactions = remember { mutableStateListOf<Interaction>() }
         LaunchedEffect(interactionSource) {
