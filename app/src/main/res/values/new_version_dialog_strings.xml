@@ -5,6 +5,7 @@
 
 <resources>
     <string name="new_version_dialog_title">Version %1$s</string>
+    <string name="bug_fixes_section_title">Bug fixes</string>
 
     <string name="feature_playlists_title">Added playlist support</string>
     <string name="feature_playlists_description">
@@ -19,6 +20,7 @@
 
     <string name="version_1_6_change_storage_permission_title">Exceed track limit</string>
     <string name="version_1_6_change_storage_permission_explanation">If the normal number of allowed tracks is exceeded, granting the app the read storage permission will allow any number of tracks to be added.</string>
-    <string name="version_1_6_change_bug_fixes_title">Bug fixes</string>
     <string name="version_1_6_change_bug_fixes_description">Fixed crash when exceeding the maximum number of allowed tracks.\nFixed the quick settings tile not updating its state.</string>
+
+    <string name="version_1_6_2_change_crash_on_adding_media_fix">Fixed (hopefully) a crash some users were experiencing when adding media.</string>
 </resources>

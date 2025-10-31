@@ -64,11 +64,15 @@ import com.cliffracertech.soundaura.dialog.SoundAuraDialog
                 stringResource(R.string.feature_volume_boost_title) to
                     stringResource(R.string.feature_volume_boost_description,
                         stringResource(R.string.volume_boost_description)))
-            else -> listOf(
+            12 -> listOf(
                 stringResource(R.string.version_1_6_change_storage_permission_title) to
                     stringResource(R.string.version_1_6_change_storage_permission_explanation),
-                stringResource(R.string.version_1_6_change_bug_fixes_title) to
+                stringResource(R.string.bug_fixes_section_title) to
                     stringResource(R.string.version_1_6_change_bug_fixes_description))
+            else -> listOf(
+                stringResource(R.string.bug_fixes_section_title) to
+                    stringResource(R.string.version_1_6_2_change_crash_on_adding_media_fix)
+            )
         }
         features.forEach { (title, description) ->
             Text(title, Modifier.align(Alignment.CenterHorizontally))

@@ -1,0 +1,1 @@
+(hopefully) Fixed a crash some users were experiencing when adding media.
