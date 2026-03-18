@@ -46,6 +46,7 @@ data class MediaControllerSizes(
     val minThickness: Dp = defaultMinThicknessDp.dp,
     val activePresetLength: Dp,
     val playButtonLength: Dp = defaultPlayButtonLengthDp.dp,
+    val masterVolumeButtonLength: Dp = defaultMasterVolumeButtonLengthDp.dp,
     val stopTimerSize: DpSize = DpSize(
         width = defaultStopTimerWidthDp.dp,
         height = defaultStopTimerHeightDp.dp),
@@ -69,6 +70,7 @@ data class MediaControllerSizes(
         val stopTimerLength = if (!showingStopTimer) 0.dp
                               else dividerSize + stopTimeLength
         val length = activePresetLength + dividerSize +
+                     masterVolumeButtonLength + dividerSize +
                      playButtonLength + stopTimerLength
         return DpSize(width = length, height = collapsedThickness)
     }
@@ -94,6 +96,7 @@ data class MediaControllerSizes(
 
     companion object {
         const val defaultPlayButtonLengthDp = 56
+        const val defaultMasterVolumeButtonLengthDp = 56
         const val defaultStopTimerWidthDp = 72
         const val defaultStopTimerHeightDp = 56
         const val dividerThicknessDp = 1.5f

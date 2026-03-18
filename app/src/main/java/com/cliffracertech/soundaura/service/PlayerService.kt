@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import androidx.media.AudioAttributesCompat
@@ -179,6 +180,11 @@ class PlayerService: LifecycleService() {
                 .onEach { stopInsteadOfPause = it }
                 .launchIn(this)
 
+            val masterVolumeKey = floatPreferencesKey(PrefKeys.masterVolume)
+            dataStore.preferenceFlow(masterVolumeKey, 1f)
+                .onEach { playerMap.setMasterVolume(it) }
+                .launchIn(this)
+
             playlistDao.getActivePlaylistsAndTracks()
                 .onEach(::updatePlayers)
                 .launchIn(this)
@@ -333,6 +339,9 @@ class PlayerService: LifecycleService() {
     fun setPlaylistVolume(playlistId: Long, volume: Float) =
         playerMap.setPlayerVolume(playlistId, volume)
 
+    fun setMasterVolume(volume: Float) =
+        playerMap.setMasterVolume(volume)
+
     /**
      * Automatically pause playback if the parameter [condition] is true and
      * [isPlaying] is true. If this auto-pause succeeds, an unpause lock will be
@@ -397,6 +406,9 @@ class PlayerService: LifecycleService() {
 
         fun setPlaylistVolume(playlistId: Long, volume: Float) =
             this@PlayerService.setPlaylistVolume(playlistId, volume)
+
+        fun setMasterVolume(volume: Float) =
+            this@PlayerService.setMasterVolume(volume)
     }
 
     /** PlaybackModule enables PlayerService to have its functionality extended

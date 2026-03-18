@@ -42,6 +42,7 @@ Tap the plus symbol next to an added track or playlist to
     <string name="playlist_error_message">Files missing/corrupt</string>
     <string name="item_options_button_description">%1$s more options</string>
     <string name="remove_item_description">Remove %1$s</string>
+    <string name="master_volume_label">Master volume</string>
 
     <!-- Dialogs general -->
     <string name="rename">Rename</string>

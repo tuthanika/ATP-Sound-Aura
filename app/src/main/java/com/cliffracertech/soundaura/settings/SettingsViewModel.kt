@@ -114,6 +114,10 @@ object PrefKeys {
     /** A boolean value that indicates whether the user has been shown the long
      * click hint for the play/pause button. */
     const val playButtonLongClickHintShown = "play_button_long_click_hint_shown"
+
+    /** A float value in the range of 0.0f - 1.0f that represents the
+     * master volume of the application's sound mix. */
+    const val masterVolume = "master_volume"
 }
 
 enum class AppTheme { UseSystem, Light, Dark;

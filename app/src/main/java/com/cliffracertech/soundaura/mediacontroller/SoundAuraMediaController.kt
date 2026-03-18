@@ -63,13 +63,15 @@ import com.cliffracertech.soundaura.ui.tweenDuration
         // then used to ensure that for small screen sizes the media controller
         // can't overlap the add button.
         val playButtonLength = MediaControllerSizes.defaultPlayButtonLengthDp.dp
+        val masterVolumeButtonLength = MediaControllerSizes.defaultMasterVolumeButtonLengthDp.dp
         val dividerThickness = MediaControllerSizes.dividerThicknessDp.dp
         val stopTimerLength = MediaControllerSizes.defaultStopTimerWidthDp.dp
         val extraLength = playButtonLength / 2f + stopTimerLength
         val length = contentAreaSize.width / 2f + extraLength
         val maxLength = contentAreaSize.width - 64.dp
         val activePresetLength = minOf(length, maxLength) - playButtonLength -
-                                 dividerThickness - stopTimerLength
+                                 masterVolumeButtonLength - dividerThickness * 2 -
+                                 stopTimerLength
         MediaControllerSizes(
             activePresetLength = activePresetLength,
             presetSelectorSize = DpSize(

@@ -33,6 +33,7 @@ class Player(
     private val context: Context,
     private var playlist: ActivePlaylist,
     startImmediately: Boolean = false,
+    masterVolume: Float = 1f,
     private val onPlaybackFailure: (List<Uri>) -> Unit,
     private val onPlaybackComplete: () -> Unit = {},
 ) {
@@ -40,6 +41,11 @@ class Player(
     private var volumeBoosters: List<LoudnessEnhancer> = emptyList()
     private var targetBoostDb = playlist.volumeBoostDb
     private var hasReportedCompletion = false
+    var masterVolume = masterVolume
+        set(value) {
+            field = value
+            setVolume(playlist.volume)
+        }
 
     init {
         initializeExoPlayer(startImmediately)
@@ -60,7 +66,7 @@ class Player(
     }
 
     fun setVolume(volume: Float) {
-        exoPlayers.forEach { it.volume = volume }
+        exoPlayers.forEach { it.volume = volume * (masterVolume * masterVolume) }
     }
 
     fun update(newPlaylist: ActivePlaylist, startImmediately: Boolean) {
@@ -71,7 +77,7 @@ class Player(
         ) {
             initializeExoPlayer(startImmediately, newPlaylist)
         } else {
-            exoPlayers.forEach { it.volume = newPlaylist.volume }
+            setVolume(newPlaylist.volume)
             targetBoostDb = newPlaylist.volumeBoostDb
             applyVolumeBoost()
             exoPlayers.forEach { it.playWhenReady = startImmediately }
@@ -108,7 +114,7 @@ class Player(
                 setMediaItems(sourcePlaylist.trackUris.map(MediaItem::fromUri))
                 repeatMode = ExoPlayerState.REPEAT_MODE_ALL
                 shuffleModeEnabled = sourcePlaylist.shuffle
-                volume = sourcePlaylist.volume
+                volume = sourcePlaylist.volume * (masterVolume * masterVolume)
                 addListener(object : ExoPlayerState.Listener {
                     override fun onPlaybackStateChanged(playbackState: Int) {
                         notifyPlaybackCompleteIfNeeded()
@@ -128,7 +134,7 @@ class Player(
                 repeatMode = if (track.loopEnabled)
                     ExoPlayerState.REPEAT_MODE_ONE
                 else ExoPlayerState.REPEAT_MODE_OFF
-                volume = sourcePlaylist.volume
+                volume = sourcePlaylist.volume * (masterVolume * masterVolume)
                 addListener(object : ExoPlayerState.Listener {
                     override fun onPlaybackStateChanged(playbackState: Int) {
                         notifyPlaybackCompleteIfNeeded()
@@ -171,6 +177,7 @@ class PlayerMap(
     private val onAllPlaybackComplete: () -> Unit = {},
 ) {
     private var playerMap: MutableMap<Long, Player> = hashMapOf()
+    private var masterVolume = 1f
 
     val isEmpty get() = playerMap.isEmpty()
 
@@ -185,6 +192,11 @@ class PlayerMap(
 
     fun setPlayerVolume(playlistId: Long, volume: Float) =
         playerMap[playlistId]?.setVolume(volume)
+
+    fun setMasterVolume(volume: Float) {
+        masterVolume = volume
+        playerMap.values.forEach { it.masterVolume = volume }
+    }
 
     fun releaseAll() = playerMap.values.forEach(Player::release)
 
@@ -202,6 +214,7 @@ class PlayerMap(
                     context = context,
                     playlist = playlist,
                     startImmediately = startPlaying,
+                    masterVolume = masterVolume,
                     onPlaybackFailure = onPlaybackFailure,
                     onPlaybackComplete = ::onPlayerPlaybackComplete,
                 )

@@ -164,6 +164,8 @@ class MediaControllerViewModel @Inject constructor(
         activePreset = activePresetViewState,
         playButton = playButtonState,
         presetList = presetListState,
+        masterVolumeProvider = playbackState::masterVolume,
+        onMasterVolumeChange = playbackState::setMasterVolume,
         stopTimeProvider = playbackState::stopTime,
         onStopTimerClick = {
             shownDialog = DialogType.Confirmatory(

@@ -22,13 +22,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.window.Popup
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Slider
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -39,11 +43,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.cliffracertech.soundaura.R
 import com.cliffracertech.soundaura.model.database.Preset
@@ -161,11 +167,69 @@ class ActivePresetViewState(
  *     the display of the stop time is clicked
  * @param modifier The [Modifier] to use for the composable
  */
+@Composable private fun MasterVolumeControl(
+    modifier: Modifier = Modifier,
+    masterVolume: Float,
+    onMasterVolumeChange: (Float) -> Unit,
+) {
+    var showingSlider by rememberMutableStateOf(false)
+    val percentage = (masterVolume * 100).toInt()
+
+    Box(modifier, contentAlignment = Alignment.Center) {
+        Column(
+            modifier = Modifier.clickable(
+                onClickLabel = stringResource(R.string.master_volume_label),
+                role = Role.Button,
+                onClick = { showingSlider = !showingSlider }
+            ).padding(horizontal = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(Icons.Default.VolumeUp, null)
+            Text(text = "$percentage%",
+                 style = MaterialTheme.typography.caption,
+                 maxLines = 1, softWrap = false)
+        }
+
+        if (showingSlider) {
+            Popup(
+                alignment = Alignment.TopCenter,
+                offset = IntOffset(0, -150),
+                onDismissRequest = { showingSlider = false }
+            ) {
+                Column(
+                    modifier = Modifier
+                        .background(MaterialTheme.colors.surface, MaterialTheme.shapes.medium)
+                        .padding(vertical = 12.dp, horizontal = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(modifier = Modifier.size(32.dp, 120.dp), contentAlignment = Alignment.Center) {
+                        Slider(
+                            value = masterVolume,
+                            onValueChange = onMasterVolumeChange,
+                            modifier = Modifier
+                                .graphicsLayer {
+                                    rotationZ = 270f
+                                    transformOrigin = TransformOrigin.Center
+                                }
+                                .requiredWidth(120.dp))
+                    }
+                    Text(text = "$percentage%",
+                         style = MaterialTheme.typography.subtitle2,
+                         color = MaterialTheme.colors.onSurface)
+                }
+            }
+        }
+    }
+}
+
 @Composable private fun MediaControllerCollapsedContent(
     sizes: MediaControllerSizes,
     transitionProgressProvider: () -> Float,
     activePresetState: ActivePresetViewState,
     playButtonState: PlayButtonState,
+    masterVolumeProvider: () -> Float,
+    onMasterVolumeChange: (Float) -> Unit,
     stopTimeProvider: () -> Instant?,
     onStopTimerClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -173,6 +237,11 @@ class ActivePresetViewState(
     .graphicsLayer { alpha = 1f - transitionProgressProvider() }
 ) {
     ActivePresetView(sizes, activePresetState)
+    VerticalDivider(heightFraction = 0.8f)
+    MasterVolumeControl(
+        modifier = Modifier.height(sizes.collapsedThickness),
+        masterVolume = masterVolumeProvider(),
+        onMasterVolumeChange = onMasterVolumeChange)
     VerticalDivider(heightFraction = 0.8f)
     PlayButton(
         state = playButtonState,
@@ -256,6 +325,7 @@ class ActivePresetViewState(
             state = presetListState)
 }
 
+
 /** A state holder for an expandable media controller. The states for the media
  * controller's sub-components are exposed through the properties [activePreset],
  * [playButton], and [presetList]. The expanded/collapsed/hidden state is
@@ -272,6 +342,8 @@ class MediaControllerState(
     val activePreset: ActivePresetViewState,
     val playButton: PlayButtonState,
     val presetList: PresetListState,
+    private val masterVolumeProvider: () -> Float,
+    val onMasterVolumeChange: (Float) -> Unit,
     private val stopTimeProvider: () -> Instant?,
     val onStopTimerClick: () -> Unit,
     private val visibilityProvider: () -> Visibility,
@@ -284,6 +356,7 @@ class MediaControllerState(
         val isExpanded get() = this == Expanded
     }
 
+    val masterVolume get() = masterVolumeProvider()
     val stopTime get() = stopTimeProvider()
     val visibility get() = visibilityProvider()
 }
@@ -363,13 +436,15 @@ class MediaControllerState(
                     MediaControllerCollapsedContent(
                         sizes, transitionProgressProvider,
                         state.activePreset, state.playButton,
+                        state::masterVolume, state.onMasterVolumeChange,
                         state::stopTime, state.onStopTimerClick)
             }
-            if (expandTransitionProgress > 0f)
+            if (expandTransitionProgress > 0f) {
                 MediaControllerPresetList(
                     sizes, hasStopTime, backgroundBrush,
                     transitionProgressProvider,
                     state.activePreset, state.presetList)
+            }
         }
     }
 }
@@ -410,6 +485,8 @@ fun MediaControllerPreview() = SoundAuraTheme {
                 onOverwriteClick = {},
                 onDeleteClick = {},
                 onClick = { activePresetName.value = it }),
+            masterVolumeProvider = { 1f },
+            onMasterVolumeChange = {},
             stopTimeProvider = { stopTime },
             onStopTimerClick = { stopTime = null },
             visibilityProvider = { visibility },

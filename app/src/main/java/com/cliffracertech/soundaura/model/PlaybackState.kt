@@ -8,7 +8,17 @@ import androidx.annotation.FloatRange
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import com.cliffracertech.soundaura.collectAsState
+import com.cliffracertech.soundaura.edit
+import com.cliffracertech.soundaura.preferenceFlow
 import com.cliffracertech.soundaura.service.PlayerService
+import com.cliffracertech.soundaura.settings.PrefKeys
+import com.cliffracertech.soundaura.settings.dataStore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -39,6 +49,11 @@ interface PlaybackState {
 
     /** Set the playlist identified by [playlistId]'s volume to [volume]. */
     fun setPlaylistVolume(playlistId: Long, @FloatRange(0.0, 1.0) volume: Float)
+
+    /** The current 'master volume' scaling factor for the app's sound mix. */
+    val masterVolume: Float
+    /** Set the app's master volume scaling factor to [volume]. */
+    fun setMasterVolume(@FloatRange(0.0, 1.0) volume: Float)
 }
 
 /** An implementation of [PlaybackState] that is backed by a [PlayerService] instance. */
@@ -48,10 +63,18 @@ class PlayerServicePlaybackState(
     override var isPlaying by mutableStateOf(PlayerService.binder?.isPlaying ?: false)
         private set
 
+    private var _masterVolume by mutableStateOf(1f)
+    override val masterVolume get() = _masterVolume
+
     init {
+        val scope = ProcessLifecycleOwner.get().lifecycleScope
         PlayerService.addPlaybackChangeListener {
             isPlaying = PlayerService.binder?.isPlaying ?: false
         }
+        val masterVolumeKey = floatPreferencesKey(PrefKeys.masterVolume)
+        context.dataStore.preferenceFlow(masterVolumeKey, 1f)
+            .onEach { _masterVolume = it }
+            .launchIn(scope)
     }
 
     override fun toggleIsPlaying() {
@@ -75,6 +98,14 @@ class PlayerServicePlaybackState(
         // will therefore be reflected next time the service is started and
         // the active tracks (and their volumes) are read from the database.
         PlayerService.binder?.setPlaylistVolume(playlistId, volume)
+    }
+
+    override fun setMasterVolume(volume: Float) {
+        _masterVolume = volume
+        PlayerService.binder?.setMasterVolume(volume)
+        val scope = ProcessLifecycleOwner.get().lifecycleScope
+        val masterVolumeKey = floatPreferencesKey(PrefKeys.masterVolume)
+        context.dataStore.edit(masterVolumeKey, volume, scope)
     }
 }
 
@@ -107,4 +138,8 @@ class TestPlaybackState: PlaybackState {
     override fun clearTimer() { stopTime = null }
 
     override fun setPlaylistVolume(playlistId: Long, volume: Float) = Unit
+
+    private var _masterVolume = 1f
+    override val masterVolume get() = _masterVolume
+    override fun setMasterVolume(volume: Float) { _masterVolume = volume }
 }

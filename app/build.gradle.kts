@@ -84,6 +84,7 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.11.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.4")
     implementation("androidx.lifecycle:lifecycle-service:2.9.4")
+    implementation("androidx.lifecycle:lifecycle-process:2.9.4")
     implementation("androidx.room:room-runtime:2.8.3")
     implementation("androidx.room:room-ktx:2.8.3")
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
