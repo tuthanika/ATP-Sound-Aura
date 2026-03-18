@@ -36,6 +36,10 @@ class SoundAuraWidget : AppWidgetProvider() {
         const val EXTRA_PLAYLIST_ID = "extra_playlist_id"
         const val EXTRA_PLAYLIST_NAME = "extra_playlist_name"
         const val ACTION_UPDATE_WIDGET = "com.cliffracertech.soundaura.widget.ACTION_UPDATE_WIDGET"
+        const val ACTION_TOGGLE_VOLUME_SLIDER = "com.cliffracertech.soundaura.widget.ACTION_TOGGLE_VOLUME_SLIDER"
+        const val ACTION_SET_VOLUME_LEVEL = "com.cliffracertech.soundaura.widget.ACTION_SET_VOLUME_LEVEL"
+        const val ACTION_HIDE_VOLUME_SLIDER = "com.cliffracertech.soundaura.widget.ACTION_HIDE_VOLUME_SLIDER"
+        const val EXTRA_VOLUME_LEVEL = "extra_volume_level"
 
         fun sendAction(context: Context, action: String, playlistId: Long = -1, playlistName: String = "") {
             when (action) {

@@ -118,6 +118,10 @@ object PrefKeys {
     /** A float value in the range of 0.0f - 1.0f that represents the
      * master volume of the application's sound mix. */
     const val masterVolume = "master_volume"
+
+    /** A boolean value that indicates whether the master volume slider
+     * is currently visible in the app widgets. */
+    const val isVolumeSliderVisible = "is_volume_slider_visible"
 }
 
 enum class AppTheme { UseSystem, Light, Dark;

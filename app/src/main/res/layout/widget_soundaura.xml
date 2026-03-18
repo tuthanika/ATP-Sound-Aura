@@ -1,84 +1,176 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="12dp"
-    android:background="@drawable/widget_background">
+    android:clipChildren="false"
+    android:clipToPadding="false">
 
-    <!-- Título y estado -->
     <LinearLayout
-        android:id="@+id/widget_title_container"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical"
-        android:paddingBottom="8dp"
-        android:background="?android:attr/selectableItemBackground">
+        android:padding="12dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:background="@drawable/widget_background">
 
-        <TextView
-            android:id="@+id/widget_playlist_name"
+        <!-- Título y estado -->
+        <LinearLayout
+            android:id="@+id/widget_title_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/app_name"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="@android:color/white"
-            android:maxLines="1"
-            android:ellipsize="end" />
+            android:orientation="vertical"
+            android:paddingBottom="8dp"
+            android:background="?android:attr/selectableItemBackground">
 
-        <TextView
-            android:id="@+id/widget_status"
+            <TextView
+                android:id="@+id/widget_playlist_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/app_name"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/widget_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/stopped"
+                android:textSize="14sp"
+                android:textColor="@android:color/white"
+                android:alpha="0.8" />
+
+            <TextView
+                android:id="@+id/widget_timer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="@android:color/white"
+                android:alpha="0.6"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- Lista de pistas/playlists -->
+        <ListView
+            android:id="@+id/widget_playlist_list"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:divider="@android:color/transparent"
+            android:dividerHeight="4dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp" />
+
+        <!-- Botones de control básicos -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/stopped"
-            android:textSize="14sp"
-            android:textColor="@android:color/white"
-            android:alpha="0.8" />
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:paddingTop="8dp">
 
-        <TextView
-            android:id="@+id/widget_timer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textSize="12sp"
-            android:textColor="@android:color/white"
-            android:alpha="0.6"
-            android:visibility="gone" />
+            <ImageButton
+                android:id="@+id/widget_play_pause"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:src="@drawable/ic_baseline_play_24"
+                android:background="@drawable/widget_play_button_bg"
+                android:contentDescription="@string/play_pause" />
+
+            <ImageButton
+                android:id="@+id/widget_stop"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_baseline_stop_24"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/stop" />
+            <LinearLayout
+                android:id="@+id/widget_master_volume_container"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginStart="16dp"
+                android:gravity="center_vertical"
+                android:padding="4dp"
+                android:background="?android:attr/selectableItemBackground">
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_baseline_volume_up_24"
+                    android:tint="@android:color/white" />
+                <TextView
+                    android:id="@+id/widget_master_volume_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:textColor="@android:color/white"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:text="100%" />
+            </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
 
-    <!-- Lista de pistas/playlists -->
-    <ListView
-        android:id="@+id/widget_playlist_list"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:divider="@android:color/transparent"
-        android:dividerHeight="4dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp" />
-
-    <!-- Botones de control básicos -->
+    <!-- Ghost Overlay for Perfect Slider Alignment (Bottom Controls) -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="horizontal"
-        android:gravity="center"
-        android:paddingTop="8dp">
-
-        <ImageButton
-            android:id="@+id/widget_play_pause"
-            android:layout_width="56dp"
+        android:gravity="center_horizontal|bottom"
+        android:padding="12dp"
+        android:clipChildren="false"
+        android:clipToPadding="false">
+        
+        <!-- Mirror Play Button (56dp) -->
+        <Space 
+            android:layout_width="56dp" 
+            android:layout_height="56dp" />
+            
+        <!-- Mirror Stop Button (48dp) -->
+        <Space 
+            android:id="@+id/widget_ghost_stop_space"
+            android:layout_width="48dp" 
             android:layout_height="56dp"
-            android:src="@drawable/ic_baseline_play_24"
-            android:background="@drawable/widget_play_button_bg"
-            android:contentDescription="@string/play_pause" />
+            android:visibility="gone" />
+            
+        <!-- Mirror Volume Column -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:orientation="vertical"
+            android:gravity="bottom">
+            
+            <!-- The Real Slider (Flows UP, so it's ABOVE the icon row) -->
+            <LinearLayout
+                android:id="@+id/widget_volume_slider_container"
+                android:layout_width="40dp"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="56dp"
+                android:orientation="vertical"
+                android:background="@drawable/widget_volume_slider_bg"
+                android:visibility="gone">
+                <ImageButton android:id="@+id/widget_volume_100" android:layout_width="match_parent" android:layout_height="8dp" android:background="@android:color/transparent" android:scaleType="fitCenter" />
+                <ImageButton android:id="@+id/widget_volume_90" android:layout_width="match_parent" android:layout_height="8dp" android:background="@android:color/transparent" android:scaleType="fitCenter" />
+                <ImageButton android:id="@+id/widget_volume_80" android:layout_width="match_parent" android:layout_height="8dp" android:background="@android:color/transparent" android:scaleType="fitCenter" />
+                <ImageButton android:id="@+id/widget_volume_70" android:layout_width="match_parent" android:layout_height="8dp" android:background="@android:color/transparent" android:scaleType="fitCenter" />
+                <ImageButton android:id="@+id/widget_volume_60" android:layout_width="match_parent" android:layout_height="8dp" android:background="@android:color/transparent" android:scaleType="fitCenter" />
+                <ImageButton android:id="@+id/widget_volume_50" android:layout_width="match_parent" android:layout_height="8dp" android:background="@android:color/transparent" android:scaleType="fitCenter" />
+                <ImageButton android:id="@+id/widget_volume_40" android:layout_width="match_parent" android:layout_height="8dp" android:background="@android:color/transparent" android:scaleType="fitCenter" />
+                <ImageButton android:id="@+id/widget_volume_30" android:layout_width="match_parent" android:layout_height="8dp" android:background="@android:color/transparent" android:scaleType="fitCenter" />
+                <ImageButton android:id="@+id/widget_volume_20" android:layout_width="match_parent" android:layout_height="8dp" android:background="@android:color/transparent" android:scaleType="fitCenter" />
+                <ImageButton android:id="@+id/widget_volume_10" android:layout_width="match_parent" android:layout_height="8dp" android:background="@android:color/transparent" android:scaleType="fitCenter" />
+            </LinearLayout>
 
-        <ImageButton
-            android:id="@+id/widget_stop"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@drawable/ic_baseline_stop_24"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/stop" />
+            <!-- Bottom gap matches the row height -->
+            <Space android:layout_width="1dp" android:layout_height="1dp" />
+        </LinearLayout>
     </LinearLayout>
 
-</LinearLayout>
+</FrameLayout>
