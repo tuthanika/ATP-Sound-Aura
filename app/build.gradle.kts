@@ -22,8 +22,8 @@ android {
         applicationId = "com.tuthanika.soundaura.plus"
         minSdk = 24
         targetSdk = 36
-        versionCode = 13
-        versionName = "1.6.2"
+        versionCode = 1
+        versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -93,6 +93,7 @@ dependencies {
     implementation("com.google.accompanist:accompanist-insets:0.30.1")
     implementation("com.google.accompanist:accompanist-insets-ui:0.36.0")
     implementation("androidx.media:media:1.7.1")
+    implementation("androidx.media3:media3-exoplayer:1.5.1")
     implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation("com.google.dagger:hilt-android:2.57.2")
     implementation("com.mikepenz:aboutlibraries-core:13.1.0")

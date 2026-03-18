@@ -4,10 +4,12 @@
 package com.cliffracertech.soundaura.service
 
 import android.content.Context
-import android.media.MediaPlayer
 import android.media.audiofx.LoudnessEnhancer
 import android.net.Uri
-import java.io.IOException
+import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player as ExoPlayerState
+import androidx.media3.exoplayer.ExoPlayer
 
 data class ActivePlaylistSummary(
     val id: Long,
@@ -23,23 +25,17 @@ val ActivePlaylist.volumeBoostDb get() = key.volumeBoostDb
 val ActivePlaylist.tracks get() = value
 
 /**
- * A [MediaPlayer] wrapper that allows for seamless looping of the provided
+ * An [ExoPlayer] wrapper that allows for seamless looping of the provided
  * [ActivePlaylist]. The [update] method can be used when the [ActivePlaylist]'s
  * properties change. The property [volume] describes the current volume for
  * both audio channels, and is initialized to the [ActivePlaylist]'s [volume]
  * field.
  *
  * The methods [play], [pause], and [stop] can be used to control playback of
- * the Player. These methods correspond to the [MediaPlayer] methods of the
- * same name, except for [stop]. [Player]'s [stop] method is functionally the
- * same as pausing while seeking to the start of the media.
+ * the Player.
  *
  * If there is a problem with one or more [Uri]s within the [ActivePlaylist]'s
- * [tracks], playback of the next track will be attempted until one is found
- * that can be played. If [MediaPlayer] creation fails for all of the tracks,
- * no playback will occur, and calling [play] will have no effect. When one or
- * more tracks fail to play, the provided callback [onPlaybackFailure] will be
- * invoked.
+ * [tracks], the provided callback [onPlaybackFailure] will be invoked.
  *
  * @param context A [Context] instance. Note that the provided context instance
  *     is held onto for the lifetime of the Player instance, and so should not
@@ -47,8 +43,8 @@ val ActivePlaylist.tracks get() = value
  * @param playlist The [ActivePlaylist] whose contents will be played
  * @param startImmediately Whether or not the Player should start playback
  *     as soon as it is ready
- * @param onPlaybackFailure A callback that will be invoked if MediaPlayer
- *     creation fails for one or more [Uri]s in the playlist
+ * @param onPlaybackFailure A callback that will be invoked if playback fails
+ *     for one or more [Uri]s in the playlist
  */
 class Player(
     private val context: Context,
@@ -56,147 +52,103 @@ class Player(
     startImmediately: Boolean = false,
     private val onPlaybackFailure: (List<Uri>) -> Unit,
 ) {
-    private var uriIterator = uriIterator(playlist)
-    private var mediaPlayer: MediaPlayer? = null
+    private var exoPlayer: ExoPlayer? = null
     private var volumeBooster: LoudnessEnhancer? = null
-    // Without tracking the intended playing/paused state in this property,
-    // an issue can occur if an attempt to pause is made when the internal
-    // MediaPlayer is in the process of switching to the next track in a
-    // playlist that will cause the pause command to be ignored. This is
-    // resolved by using the value of isPlaying in the on completion listener.
+    private var targetBoostDb = playlist.volumeBoostDb
     private var isPlaying = startImmediately
 
-    private val onCompletionListener = MediaPlayer.OnCompletionListener {
-        initializePlayerForNextUri(startImmediately = isPlaying)
-    }
-
     init {
-        initializePlayerForNextUri(startImmediately)
-        mediaPlayer?.initializeFor(playlist)
+        initializeExoPlayer(startImmediately)
     }
 
     fun play() {
         isPlaying = true
-        mediaPlayer?.start()
+        exoPlayer?.playWhenReady = true
     }
 
     fun pause() {
         isPlaying = false
-        mediaPlayer?.pause()
+        exoPlayer?.pause()
     }
 
     fun stop() {
         isPlaying = false
-        if (playlist.tracks.size < 2) {
-            mediaPlayer?.pause()
-            mediaPlayer?.seekTo(0)
-        } else {
-            uriIterator = uriIterator(playlist)
-            initializePlayerForNextUri(startImmediately = false)
-        }
+        exoPlayer?.pause()
+        exoPlayer?.seekToDefaultPosition()
     }
 
     fun setVolume(volume: Float) {
-        mediaPlayer?.setVolume(volume, volume)
+        exoPlayer?.volume = volume
     }
 
     /** Reset the Player to play the [newPlaylist]*/
     fun update(newPlaylist: ActivePlaylist, startImmediately: Boolean) {
         isPlaying = startImmediately
 
-        if (newPlaylist.shuffle != playlist.shuffle ||
-            newPlaylist.tracks != playlist.tracks
-        ) {
-            uriIterator = uriIterator(newPlaylist)
-            initializePlayerForNextUri(startImmediately)
-            mediaPlayer?.initializeFor(newPlaylist)
-            // initializePlayerForNextUri and MediaPlayer.initializeFor will
-            // start the player and apply the volume and volumeBoost if necessary,
-            // so this does not need to be done manually in this case.
-        } else {
-            setVolume(newPlaylist.volume)
-            if (newPlaylist.volumeBoostDb != playlist.volumeBoostDb)
-                mediaPlayer?.boostVolume(newPlaylist.volumeBoostDb)
-            if (startImmediately)
-                mediaPlayer?.start()
+        if (newPlaylist.shuffle != playlist.shuffle || newPlaylist.tracks != playlist.tracks)
+            initializeExoPlayer(startImmediately, newPlaylist)
+        else {
+            exoPlayer?.volume = newPlaylist.volume
+            targetBoostDb = newPlaylist.volumeBoostDb
+            applyVolumeBoost()
+            exoPlayer?.playWhenReady = startImmediately
         }
         playlist = newPlaylist
     }
 
     fun release() {
-        mediaPlayer?.reset()
-        mediaPlayer?.release()
-    }
-
-    private fun uriIterator(playlist: ActivePlaylist) = (
-            if (!playlist.shuffle)
-                InfiniteSequence(playlist.tracks)
-            else ShuffledInfiniteSequence(
-                unshuffledValues = playlist.tracks,
-                memorySize = maxOf(1, playlist.tracks.size / 3))
-        ).iterator()
-
-    /**
-     * Determine the next target [Uri], and either create a new [MediaPlayer]
-     * instance if [mediaPlayer] is null, or attempt to reset the existing
-     * player to use the target [Uri] as a data source. When the new or
-     * existing player is prepared, playback will start immediately if
-     * [startImmediately] is true.
-     *
-     * initializePlayerForNextUri must be called once for each [Uri] that is
-     * to be played. A single track playlist only needs to call it once, but
-     * a multi-track playlist will need to have it called for each track.
-     */
-    private fun initializePlayerForNextUri(startImmediately: Boolean) {
-        // The number of player creation/data source setting attempts is
-        // recorded and compared to the playlist's track count so that we
-        // know when we have done one full loop of the playlist's tracks
-        var attempts = 0
-        var failedUris: MutableList<Uri>? = null
-        var newPlayer: MediaPlayer? = null
-
-        while (newPlayer == null && ++attempts <= playlist.tracks.size) {
-            val uri = uriIterator.next()
-            newPlayer = mediaPlayer.let {
-                if (it == null)
-                    MediaPlayer.create(context, uri)
-                else try {
-                    it.reset()
-                    it.setDataSource(context, uri)
-                    it.prepare(); it
-                } catch(e: IOException) { null }
-            }
-            if (newPlayer == null) {
-                if (failedUris == null)
-                    failedUris = mutableListOf(uri)
-                else failedUris.add(uri)
-            } else if (startImmediately)
-                newPlayer.start()
-        }
-        failedUris?.let(onPlaybackFailure)
-        mediaPlayer = newPlayer
-    }
-
-    /**
-     * Set the receiver's volume, [MediaPlayer.isLooping] property, and
-     * [MediaPlayer.setOnCompletionListener] to their appropriate values
-     * to play the content of [playlist]. init must be called only once
-     * for each [ActivePlaylist].
-     */
-    private fun MediaPlayer.initializeFor(playlist: ActivePlaylist) {
-        setVolume(playlist.volume, playlist.volume)
-        isLooping = playlist.tracks.size < 2
-        boostVolume(playlist.volumeBoostDb)
-        setOnCompletionListener(
-            if (playlist.tracks.size < 2) null
-            else onCompletionListener)
-    }
-
-    private fun MediaPlayer.boostVolume(dbBoost: Int) {
         volumeBooster?.enabled = false
-        volumeBooster = if (dbBoost == 0) null else
-            LoudnessEnhancer(audioSessionId).apply {
-                setTargetGain(dbBoost * 100)
+        exoPlayer?.release()
+    }
+
+    private fun initializeExoPlayer(
+        startImmediately: Boolean,
+        sourcePlaylist: ActivePlaylist = playlist,
+    ) {
+        targetBoostDb = sourcePlaylist.volumeBoostDb
+        volumeBooster?.enabled = false
+        exoPlayer?.release()
+
+        val tracks = sourcePlaylist.tracks
+        if (tracks.isEmpty()) {
+            exoPlayer = null
+            onPlaybackFailure(emptyList())
+            return
+        }
+
+        val newPlayer = ExoPlayer.Builder(context).build().apply {
+            val items = tracks.map(MediaItem::fromUri)
+            setMediaItems(items)
+            repeatMode = if (tracks.size < 2)
+                ExoPlayerState.REPEAT_MODE_ONE
+            else ExoPlayerState.REPEAT_MODE_ALL
+            shuffleModeEnabled = sourcePlaylist.shuffle
+            volume = sourcePlaylist.volume
+            addListener(object : ExoPlayerState.Listener {
+                override fun onAudioSessionIdChanged(audioSessionId: Int) {
+                    applyVolumeBoost()
+                }
+
+                override fun onPlayerError(error: PlaybackException) {
+                    val failed = currentMediaItem
+                        ?.localConfiguration
+                        ?.uri
+                    onPlaybackFailure(if (failed == null) tracks else listOf(failed))
+                }
+            })
+            prepare()
+            playWhenReady = startImmediately
+        }
+        exoPlayer = newPlayer
+        applyVolumeBoost()
+    }
+
+    private fun applyVolumeBoost() {
+        val sessionId = exoPlayer?.audioSessionId ?: return
+        volumeBooster?.enabled = false
+        volumeBooster = if (targetBoostDb == 0) null else
+            LoudnessEnhancer(sessionId).apply {
+                setTargetGain(targetBoostDb * 100)
                 enabled = true
             }
     }
@@ -251,7 +203,12 @@ class PlayerMap(
                 ?.apply { update(playlist, startPlaying) }
 
             playerMap[playlist.id] = existingPlayer ?:
-                Player(context, playlist, startPlaying, onPlaybackFailure)
+                Player(
+                    context = context,
+                    playlist = playlist,
+                    startImmediately = startPlaying,
+                    onPlaybackFailure = onPlaybackFailure,
+                )
         }
         oldMap.values.forEach(Player::release)
     }
