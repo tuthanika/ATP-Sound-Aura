@@ -1,0 +1,240 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    
+    
+    <string name="app_name" translatable="false">SoundAura Plus</string>
+
+    
+    <string name="app_player_service_description">Dịch vụ phát âm thanh theo bộ trộn của bạn.</string>
+    <string name="player_notification_channel_name">Điều khiển phát</string>
+    <string name="player_notification_channel_description">Thông báo điều khiển dịch vụ âm thanh nền của SoundAura.</string>
+    <string name="player_no_active_playlists_warning_message">Không có track hoặc playlist nào đang bật. Hãy bấm nút thêm trước.</string>
+    <string name="player_notification_channel_id" translatable="false">player_controls</string>
+
+    
+    <string name="tile_inactive_description">Phát âm thanh SoundAura</string>
+    <string name="tile_active_description">Dừng âm thanh SoundAura</string>
+
+    
+    <string name="back">Quay lại</string>
+    <string name="search">Tìm kiếm</string>
+    <string name="sort_options_description">Mở tùy chọn sắp xếp</string>
+
+    
+    <string name="empty_library_message">Thư viện của bạn đang trống.
+
+Nhấn nút thêm bên dưới để thêm tệp cục bộ vào thư viện.
+
+Nhấn dấu cộng bên cạnh track hoặc playlist để đưa vào bộ trộn khi bật phát.</string>
+    <string name="no_search_results_message">Không có track hoặc playlist phù hợp.</string>
+    <string name="set_playlist_active_description">Thêm %1$s vào bộ trộn</string>
+    <string name="set_playlist_inactive_description">Bỏ %1$s khỏi bộ trộn</string>
+    <string name="playlist_error_message">Tệp bị thiếu hoặc hỏng</string>
+    <string name="item_options_button_description">Thêm tùy chọn cho %1$s</string>
+    <string name="remove_item_description">Xóa %1$s</string>
+
+    
+    <string name="rename">Đổi tên</string>
+    <string name="default_rename_dialog_title">Đổi tên</string>
+    <string name="remove">Xóa</string>
+    <string name="turn_on_loop">Bật loop</string>
+    <string name="turn_off_loop">Tắt loop</string>
+    <string name="track_loop_enabled_icon_description">%1$s đang lặp</string>
+    <string name="cancel">Hủy</string>
+    <string name="ok" tools:ignore="Typos,ButtonCase">OK</string>
+    <string name="dismiss">Bỏ qua</string>
+    <string name="finish">Hoàn tất</string>
+    <string name="previous">Trước</string>
+    <string name="next">Tiếp</string>
+    <string name="checked">Đã chọn</string>
+    <string name="unchecked">Bỏ chọn</string>
+
+    
+    <string name="volume_boost_description">Tăng âm lượng</string>
+    <string name="volume_boost_explanation_part_1">Tăng âm lượng cho playlist track trước khi áp dụng âm lượng thông thường. Mỗi 10 dB tăng thêm sẽ cho cảm nhận âm lượng tăng gấp đôi. Ví dụ:</string>
+    
+    <string name="volume_boost_explanation_part_2">+ 10 dB = 2× âm lượng
++ 20 dB = 4× âm lượng
++ 30 dB = 8× âm lượng</string>
+
+    
+    <string name="confirm_remove_title">Xóa %1$s?</string>
+    <string name="confirm_remove_track_message">Mục này sẽ bi xóa khỏi thư viện.</string>
+    <string name="confirm_remove_playlist_message">Playlist sẽ bi xóa khỏi thư viện.</string>
+
+    
+    <string name="create_playlist_title">Tạo playlist</string>
+    <string name="playlist_options_title">Tùy chọn playlist</string>
+    <string name="playlist_track_count_description">%1$d track</string>
+    <string name="playlist_shuffle_switch_title">Phát ngẫu nhiên</string>
+    <string name="playlist_shuffle_switch_description">Phát track theo thứ tự ngẫu nhiên.</string>
+    <string name="playlist_playback_mode_switch_description">Bật/tắt chế độ phát của playlist</string>
+    <string name="playlist_playback_mode_sequential">Tuần tự</string>
+    <string name="playlist_playback_mode_simultaneous">Đồng thời</string>
+    <string name="playlist_track_loop_description">Bật/tắt lặp cho %1$s</string>
+    <string name="playlist_track_handle_description">Sắp xếp lại thứ tự track</string>
+    <string name="playlist_track_error_message">Tệp bị thiếu hoặc hỏng</string>
+    <string name="playlist_track_delete_description">Xóa track %1$s</string>
+    <string name="playlist_add_tracks_button_description">Thêm track vào playlist</string>
+    <string name="configure_playlist_dialog_title">Cấu hình playlist</string>
+
+    
+    <string name="file_chooser_no_valid_tracks_error_message">Hãy chọn ít nhất một tệp hợp lệ chưa có trong playlist</string>
+    <string name="file_chooser_invalid_tracks_warning_message">%1$d tệp đã tồn tại trong playlist</string>
+
+    
+    <string name="playlist_options_request_storage_permission_explanation">SoundAura đã dùng %1$d/%2$d quyền tệp tối đa khi chưa có toàn quyền bộ nhớ. Cần cấp quyền đọc tệp âm thanh để thêm track mới.</string>
+    <string name="add_local_files_request_storage_permission_title">Không đủ quyền</string>
+    <string name="add_local_files_request_storage_permission_explanation_for_tracks">SoundAura đã dùng %1$d/%2$d quyền tệp tối đa. Cần cấp quyền đọc tệp âm thanh để thêm tất cả track.</string>
+    <string name="add_local_files_request_storage_permission_explanation_for_playlist">SoundAura đã dùng %1$d/%2$d quyền tệp tối đa. Cần cấp quyền đọc tệp âm thanh để thêm toàn bộ playlist.</string>
+
+    
+    <string name="add_local_files_button_description">Thêm track hoặc playlist từ tệp cục bộ</string>
+    <string name="add_local_files_as_playlist_or_tracks_title">Thêm tệp cục bộ</string>
+    <string name="add_local_files_as_playlist_or_tracks_question">Thêm tệp thành từng track hay một playlist?</string>
+    <string name="add_local_files_individually_option">Từng track</string>
+    <string name="add_local_files_as_playlist_option">Playlist</string>
+    <string name="add_local_files_as_tracks_dialog_title">Xác nhận tên track</string>
+    <string name="add_local_files_as_playlist_dialog_title">Xác nhận tên playlist</string>
+    <string name="add_preset_button_description">Tạo preset mới</string>
+    <string name="create_new_preset_dialog_title">Nhập tên preset mới</string>
+    <string name="add">Thêm</string>
+
+    
+    <string name="add_multiple_tracks_name_error_message">Tên track phải là duy nhất và không để trống</string>
+    <string name="name_dialog_blank_name_error_message">Tên không được để trống</string>
+    <string name="name_dialog_duplicate_name_error_message">Tên đã tồn tại</string>
+
+    
+    <string name="cant_add_tracks_warning">Không thể thêm tệp vì vượt giới hạn quyền tệp của Android. Hãy xóa bớt và thử lại, hoặc cấp quyền đọc tệp.</string>
+    <string name="cant_add_playlist_warning">Không thể thêm playlist vì vượt giới hạn quyền tệp của Android. Hãy xóa bớt và thử lại, hoặc cấp quyền đọc tệp.</string>
+    <string name="cant_add_playlist_tracks_warning">Không thể thêm track mới vào playlist vì vượt giới hạn quyền tệp của Android. Hãy xóa bớt và thử lại, hoặc cấp quyền đọc tệp.</string>
+    <string name="overwrite_no_active_playlists_error_message">Preset phải có ít nhất một track hoặc playlist đang bật</string>
+    <string name="preset_cannot_be_empty_warning_message">Không có track hoặc playlist đang bật để thêm vào preset</string>
+
+    
+    <string name="preset_button_click_label">Đổi preset đang hoạt động</string>
+    <string name="unsaved_preset_description">Preset chưa lưu</string>
+    <string name="preset_selector_title">Chọn preset</string>
+    <string name="empty_preset_list_message">Bạn chưa có preset nào. Nhấn nút thêm bên dưới để lưu bộ trộn hiện tại thành preset.</string>
+    <string name="preset_click_label">Tải preset %1$s</string>
+    <string name="close_preset_selector_description">Đóng bộ chọn preset</string>
+    <string name="overwrite">Ghi đè</string>
+    <string name="confirm_overwrite_preset_dialog_title">Xác nhận ghi đè preset</string>
+    <string name="confirm_overwrite_preset_dialog_message">Thao tác này sẽ ghi đè preset %1$s. Bạn có chắc không?</string>
+    <string name="delete">Xóa</string>
+    <string name="confirm_delete_preset_title">Xóa %1$s?</string>
+    <string name="confirm_delete_preset_message">Track và playlist trong preset vẫn được giữ trong thư viện.</string>
+
+    
+    <string name="unsaved_preset_changes_warning_title">Thay đổi chưa lưu</string>
+    <string name="unsaved_preset_changes_warning_message">Preset %1$s có thay đổi chưa lưu. Nếu tải preset khác bây giờ, bạn sẽ mất các thay đổi.</string>
+    <string name="unsaved_preset_changes_warning_save_first_option">Lưu trước</string>
+    <string name="unsaved_preset_changes_warning_load_anyways_option">Vẫn tải</string>
+
+    
+    <string name="playing">Đang phát</string>
+    <string name="paused">Tạm dừng</string>
+    <string name="stopped">Đã dừng</string>
+
+    
+    <string name="play_button_description">Phát âm thanh SoundAura</string>
+    <string name="pause_button_description">Tạm dừng âm thanh SoundAura</string>
+    <string name="play_pause_button_long_click_description">Đặt hẹn giờ dùng</string>
+    <string name="play_button_long_click_hint_text">Mẹo: Nhấn giữ nút phát tạm dừng để đặt hẹn giờ dừng tự động</string>
+    <string name="play">Phát</string>
+    <string name="pause">Tạm dừng</string>
+    <string name="close">Đóng</string>
+
+    
+    <string name="set_stop_timer_dialog_description">Đặt thời gian để tự động dừng phát. Bạn có thể dùng nút lên xuống hoặc kéo sổ để thay đổi.</string>
+    <string name="stop_timer_text">sẽ dừng sau</string>
+    <string name="stop_timer_click_label">Hủy hẹn giờ dừng</string>
+    <string name="stop_timer_description">Sẽ dừng sau %1$s</string>
+    <string name="cancel_stop_timer_action">Hủy hẹn giờ</string>
+    <string name="cancel_stop_timer_dialog_title">Xác nhận hủy hẹn giờ</string>
+    <string name="cancel_stop_timer_dialog_text">Bạn có chắc muốn hủy hẹn giờ dừng từ động không?</string>
+
+    
+    <string name="show_active_playlists_first">Ưu tiên đang bật</string>
+    <string name="name_ascending">Tên tăng dần</string>
+    <string name="name_descending">Tên giảm dần</string>
+    <string name="order_added">Thứ tự thêm</string>
+
+    
+    <string name="app_settings_description">Cài đặt SoundAura</string>
+    <string name="settings">Cài đặt</string>
+    <string name="display">Hiển thị</string>
+    <string name="app_theme">Giao diện</string>
+    <string name="match_system_theme">Theo hệ thống</string>
+    <string name="light_theme">Sáng</string>
+    <string name="dark_theme">Tối</string>
+    <string name="playback">Phát</string>
+
+    
+    <string name="play_in_background_setting_title">Phát trong nền</string>
+    <string name="play_in_background_setting_description">Duy trì phát khi chạy nền</string>
+    <string name="play_in_background_explanation">Khi bật phát trong nền, SoundAura sẽ thay đổi hành vi như sau:</string>
+    <string name="play_in_background_explanation_bullet_1">Hiển thị điều khiển phát trong thông báo thường thay vì khu vực media controls</string>
+    <string name="play_in_background_explanation_bullet_2">Giúp phát tiếp tục khi mở app khác</string>
+    <string name="play_in_background_explanation_bullet_3">Bỏ qua nút media phần cứng, ví dụ nút play pause trên tai nghe, trừ khi app đang mở</string>
+    <string name="play_in_background_explanation_bullet_4">Không tự tạm dừng khi có cuộc gọi, trừ khi bật tùy chọn tạm dừng khi có cuộc gọi và đã cấp quyền đọc trạng thái điện thoại</string>
+
+    
+    <string name="request_notification_permission_title">Cần quyền thông báo</string>
+    <string name="request_notification_permission_explanation_p1">Khi bật phát trong nền, SoundAura cần thông báo thường để hiện điều khiển phát. Để làm được điều này cần quyền gửi thông báo.</string>
+    <string name="request_notification_permission_explanation_p2">Nếu bạn không muốn cấp quyền hoặc muốn tiết kiệm không gian thông báo, bạn có thể %1$s.</string>
+    <string name="tile_tutorial_link_text">điều khiển SoundAura bằng tile cài đặt nhanh</string>
+
+    
+    <string name="auto_pause_during_calls_setting_title">Tự động tạm dừng khi có cuộc gọi</string>
+    <string name="auto_pause_during_calls_setting_subtitle">Cần quyền đọc trạng thái điện thoại. Chỉ cần khi phát trong nền</string>
+    <string name="request_phone_state_permission_explanation">Khi không phát trong nền, thiết bị sẽ báo SoundAura tạm dừng trong cuộc gọi. Khi phát trong nền, cần quyền đọc trạng thái điện thoại để phát hiện cuộc gọi và tạm dừng phát.</string>
+
+    
+    <string name="on_zero_volume_behavior_setting_title">Hành vi khi âm lượng bằng 0</string>
+    <string name="on_zero_volume_behavior_setting_description">Cài đặt này quyết định cách ứng xử khi đổi thiết bị âm thanh làm âm lượng về 0, ví dụ rút tai nghe.</string>
+    <string name="stop_playback_on_zero_volume_title">Dừng phát</string>
+    <string name="stop_playback_on_zero_volume_description">Tự động dừng dịch vụ nền của app.</string>
+    <string name="pause_playback_on_zero_volume_title">Tạm dừng phát</string>
+    <string name="pause_playback_on_zero_volume_description">Tự động phát lại nếu đổi thiết bị âm thanh tiếp theo có âm lượng lớn hơn 0.</string>
+    <string name="do_nothing_on_zero_volume_title">Không làm gì</string>
+    <string name="do_nothing_on_zero_volume_description">Tiếp tục phát dù không nghe thấy, có thể tốn pin hơn.</string>
+
+    
+    <string name="control_playback_using_tile_setting_title">Điều khiển bằng tile</string>
+    <string name="tile_tutorial_title">Hướng dẫn tile</string>
+    <string name="multi_step_dialog_indicator">%1$d trên %2$d</string>
+    <string name="tile_tutorial_intro_text">Ngoài thông báo, bạn có thể điều khiển SoundAura bằng tile cài đặt nhanh.</string>
+    <string name="tile_tutorial_add_tile_text">Để thêm tile vào danh sách đang dùng, mở bảng cài đặt nhanh đầy đủ, bấm sửa và kéo tile SoundAura vào danh sách.</string>
+    <string name="tile_tutorial_add_tile_help_button_text">Trợ giúp: Không biết cách thêm tile</string>
+    <string name="tile_tutorial_add_tile_help_button_show_description">Hiện trợ giúp thêm tile</string>
+    <string name="tile_tutorial_add_tile_help_button_hide_description">Ẩn trợ giúp thêm tile</string>
+    <string name="tile_tutorial_add_tile_help_text">Nút sửa tile có thể khác nhau tùy máy và phiên bản Android. Thử tìm edit quick settings tiles kèm tên hãng máy trên internet.</string>
+    <string name="tile_tutorial_add_tile_button_text">Thêm tile</string>
+    <string name="tile_tutorial_tile_usage_text">Bấm tile để chuyển trạng thái phát dừng của SoundAura. Nhấn giữ tile để mở SoundAura.</string>
+    <string name="tile_tutorial_hide_notification_text">Nếu muốn ẩn thông báo SoundAura để tiết kiệm không gian, vào %1$s, bấm Thông báo và tắt Điều khiển phát.</string>
+    <string name="tile_tutorial_hide_notification_link_text">trang cài đặt hệ thống của SoundAura</string>
+
+    
+    <string name="stop_instead_of_pause_setting_title">Dừng thay vì tạm dừng</string>
+    <string name="stop_instead_of_pause_setting_description">Track playlist sẽ phát lại từ đầu thay vì tiếp tục</string>
+
+    
+    <string name="about">Giới thiệu</string>
+    <string name="privacy_policy_setting_title">Chính sách riêng tư</string>
+    <string name="privacy_policy_setting_body">SoundAura không thu thập, lưu trữ hoặc truyền dữ liệu cá nhân.</string>
+    <string name="open_source_licenses">Giấy phép mã nguồn mở</string>
+    <string name="about_app_setting_title">Về SoundAura</string>
+    <string name="about_app_setting_body">SoundAura là ứng dụng âm thanh mã nguồn mở. Bạn có thể xem mã nguồn tại liên kết bên dưới.</string>
+    <string name="view_source_code">Xem mã nguồn</string>
+    <string name="github_link" translatable="false">https://github.com/CliffracerMerchant/SoundAura</string>
+
+    
+    <string name="widget_name">SoundAura Plus</string>
+    <string name="widget_description">Điều khiển nhạc và bật tắt track</string>
+    <string name="stop">Dừng</string>
+    <string name="play_pause">Phát/Tạm dừng</string>
+    <string name="no_active_playlists">Không có nội dung đang phát</string>
+    
+</resources>

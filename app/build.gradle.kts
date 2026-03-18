@@ -19,7 +19,7 @@ android {
         .assets.srcDir("$projectDir/schemas")
 
     defaultConfig {
-        applicationId = "com.cliffracertech.soundaura"
+        applicationId = "com.tuthanika.soundaura.plus"
         minSdk = 24
         targetSdk = 36
         versionCode = 13
@@ -28,7 +28,7 @@ android {
     }
     buildTypes {
         debug {
-            applicationIdSuffix = ".debug"
+            applicationIdSuffix = ""
             isMinifyEnabled = false
             isShrinkResources = false
             isDebuggable = true

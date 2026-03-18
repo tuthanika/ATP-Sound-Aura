@@ -1,27 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!-- This file is part of SoundAura, which is released under
    ~ the terms of the Apache License 2.0. See license.md in
-   ~ the project's root directory to see the full license. -->
+   ~ the projects root directory to see the full license. -->
 
-<resources
-    xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name" translatable="false">SoundAura</string>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    
+    <!-- App name (no translation) -->
+    <string name="app_name" translatable="false">SoundAura Plus</string>
 
-    <string name="app_player_service_description">A service to play the user’s sound mix.</string>
+    <!-- Service descriptions -->
+    <string name="app_player_service_description">A service to play the user sound mix.</string>
     <string name="player_notification_channel_name">Player controls</string>
     <string name="player_notification_channel_description">
-        A notification with controls for SoundAura’s background audio service.</string>
+        A notification with controls for SoundAura background audio service.
+    </string>
     <string name="player_no_active_playlists_warning_message">
-        There are no active tracks or playlists. Tap a track or playlist’s add button first.</string>
+        There are no active tracks or playlists. Tap a track or playlist add button first.
+    </string>
+    <string name="player_notification_channel_id" translatable="false">player_controls</string>
 
+    <!-- Quick Settings Tile -->
     <string name="tile_inactive_description">Play SoundAura audio</string>
     <string name="tile_active_description">Stop SoundAura audio</string>
 
+    <!-- App bar -->
     <string name="back">Back</string>
     <string name="search">Search</string>
     <string name="sort_options_description">Open sorting options</string>
 
-    <string name="empty_library_message">Your library is empty.\n\nTap the add button below to add
-        local files to your library.\n\nTap the plus symbol next to an added track or playlist to
+    <!-- Library view -->
+    <string name="empty_library_message">Your library is empty.
+
+Tap the add button below to add
+        local files to your library.
+
+Tap the plus symbol next to an added track or playlist to
         make it part of the sound mix when playback is started.</string>
     <string name="no_search_results_message">No tracks/playlists match the query.</string>
     <string name="set_playlist_active_description">Add %1$s to sound mix</string>
@@ -30,20 +43,36 @@
     <string name="item_options_button_description">%1$s more options</string>
     <string name="remove_item_description">Remove %1$s</string>
 
+    <!-- Dialogs general -->
     <string name="rename">Rename</string>
     <string name="default_rename_dialog_title">Enter new name</string>
+    <string name="remove">Remove</string>
+    <string name="turn_on_loop">Turn on loop</string>
+    <string name="turn_off_loop">Turn off loop</string>
+    <string name="track_loop_enabled_icon_description">%1$s is looping</string>
+    <string name="cancel">Cancel</string>
+    <string name="ok" tools:ignore="Typos,ButtonCase">Ok</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="finish">Finish</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
+    <string name="checked">Checked</string>
+    <string name="unchecked">Unchecked</string>
 
+    <!-- Volume boost -->
     <string name="volume_boost_description">Boost volume</string>
     <string name="volume_boost_explanation_part_1">This will boost the volume of the
-        playlist/track before the regular volume is applied. Each 10\u2009dB increase
+        playlist/track before the regular volume is applied. Each 10 dB increase
         results in a perceived doubling of volume. For example:</string>
     <!-- u2009 is half-space, u00D7 is multiplication sign -->
     <string name="volume_boost_explanation_part_2">
-        +\u200910\u2009dB = 2\u00D7 volume
-        \n+\u200920\u2009dB = 4\u00D7 volume
-        \n+\u200930\u2009dB = 8\u00D7 volume</string>
+        + 10 dB = 2× volume
+        
++ 20 dB = 4× volume
+        
++ 30 dB = 8× volume</string>
 
-    <string name="remove">Remove</string>
+    <!-- Remove confirmation -->
     <string name="confirm_remove_title">Remove %1$s?</string>
     <string name="confirm_remove_track_message">This will remove the track from your library
         and any presets it is a part of, but will not delete the file from your device.</string>
@@ -51,35 +80,34 @@
         This will remove the playlist from your library and any presets it is a
         part of, but will not delete the files in the playlist from your device.</string>
 
+    <!-- Playlist options -->
     <string name="create_playlist_title">Create playlist</string>
     <string name="playlist_options_title">Playlist options</string>
     <string name="playlist_track_count_description">%1$s track(s)</string>
     <string name="playlist_shuffle_switch_title">Shuffle</string>
     <string name="playlist_shuffle_switch_description">Toggle shuffle on/off</string>
+    <string name="playlist_playback_mode_switch_description">Toggle playlist playback mode</string>
+    <string name="playlist_playback_mode_sequential">Sequential</string>
+    <string name="playlist_playback_mode_simultaneous">Simultaneous</string>
+    <string name="playlist_track_loop_description">Toggle loop for %1$s</string>
     <string name="playlist_track_handle_description">Reorder track %1$s</string>
     <string name="playlist_track_error_message">File missing/corrupt:</string>
     <string name="playlist_track_delete_description">Remove %1$s</string>
     <string name="playlist_add_tracks_button_description">Add tracks to %1$s</string>
+    <string name="configure_playlist_dialog_title">Configure playlist options</string>
 
+    <!-- File chooser -->
     <string name="file_chooser_no_valid_tracks_error_message">
         Choose at least one file that is not already in the playlist</string>
     <string name="file_chooser_invalid_tracks_warning_message">
         %1$d of the files were already in the playlist</string>
 
+    <!-- Storage permission -->
     <string name="playlist_options_request_storage_permission_explanation">
         SoundAura has used %1$d of the %2$d file permissions Android allows for
         apps without full storage access. The read audio files permission must
         be granted in order to add the new tracks to the playlist.
     </string>
-
-    <string name="add_local_files_button_description">Add tracks or playlists from local files</string>
-    <string name="add_local_files_as_playlist_or_tracks_title">Add local file(s)</string>
-    <string name="add_local_files_as_playlist_or_tracks_question">
-        Add files as individual tracks, or as a playlist?</string>
-    <string name="add_local_files_individually_option">Individually</string>
-    <string name="add_local_files_as_playlist_option">Playlist</string>
-    <string name="add_local_files_as_tracks_dialog_title">Confirm track name(s)</string>
-    <string name="add_local_files_as_playlist_dialog_title">Confirm playlist name</string>
     <string name="add_local_files_request_storage_permission_title">Insufficient space</string>
     <string name="add_local_files_request_storage_permission_explanation_for_tracks">
         SoundAura has used %1$d of the %2$d file permissions Android allows for
@@ -92,106 +120,112 @@
         be granted in order to add the entire playlist.
     </string>
 
+    <!-- Add button -->
+    <string name="add_local_files_button_description">Add tracks or playlists from local files</string>
+    <string name="add_local_files_as_playlist_or_tracks_title">Add local file(s)</string>
+    <string name="add_local_files_as_playlist_or_tracks_question">
+        Add files as individual tracks, or as a playlist?</string>
+    <string name="add_local_files_individually_option">Individually</string>
+    <string name="add_local_files_as_playlist_option">Playlist</string>
+    <string name="add_local_files_as_tracks_dialog_title">Confirm track name(s)</string>
+    <string name="add_local_files_as_playlist_dialog_title">Confirm playlist name</string>
+    <string name="add_preset_button_description">Create new preset</string>
+    <string name="create_new_preset_dialog_title">Enter new preset name</string>
+    <string name="add">Add</string>
+
+    <!-- Name validation -->
     <string name="add_multiple_tracks_name_error_message">The tracks must have unique, non-blank names</string>
     <string name="name_dialog_blank_name_error_message">The name can not be blank</string>
     <string name="name_dialog_duplicate_name_error_message">The name is already in use</string>
 
+    <!-- Error messages -->
     <string name="cant_add_tracks_warning">
-        The files could not be added because Android’s file permission
+        The files could not be added because Androids file permission
         limit would be exceeded. Remove some tracks or playlists and try
         again, or grant the app the read files permission.</string>
     <string name="cant_add_playlist_warning">
-        The playlist could not be added because Android’s file permission
+        The playlist could not be added because Androids file permission
         limit would be exceeded. Remove some tracks or playlists and try
         again, or grant the app the read files permission.</string>
     <string name="cant_add_playlist_tracks_warning">
-        The new tracks could not be added to the playlist because Android’s file
+        The new tracks could not be added to the playlist because Androids file
         permission limit would be exceeded. Remove some tracks or playlists and
         try again, or grant the app the read files permission.
     </string>
+    <string name="overwrite_no_active_playlists_error_message">
+        Presets must have at least one active track or playlist</string>
+    <string name="preset_cannot_be_empty_warning_message">
+        There are no active tracks or playlists to add to the preset</string>
 
-    <string name="configure_playlist_dialog_title">Configure playlist options</string>
-
+    <!-- Presets -->
     <string name="preset_button_click_label">Change active preset</string>
     <string name="unsaved_preset_description">Unsaved preset</string>
-
-    <string name="play_button_description">Play SoundAura audio</string>
-    <string name="pause_button_description">Pause SoundAura audio</string>
-
-    <string name="play_pause_button_long_click_description">Set auto stop timer</string>
-    <string name="set_stop_timer_dialog_description">
-        Set the duration after which playback will automatically be stopped.
-        You can change the amounts using the up or down buttons, or by
-        dragging the amount up or down.</string>
-
-    <string name="stop_timer_text">ing in</string>
-    <string name="stop_timer_click_label">Cancel auto stop timer</string>
-    <string name="cancel_stop_timer_dialog_title">Confirm timer cancellation</string>
-    <string name="cancel_stop_timer_dialog_text">
-        Are you sure you would like to cancel the auto stop timer?</string>
-
     <string name="preset_selector_title">Select a preset</string>
-    <string name="empty_preset_list_message">You don’t have any saved presets.
+    <string name="empty_preset_list_message">You do not have any saved presets.
         Tap the add button below to save the current sound mix as a preset.</string>
     <string name="preset_click_label">Load preset %1$s</string>
     <string name="close_preset_selector_description">Close preset selector</string>
-
     <string name="overwrite">Overwrite</string>
-    <string name="overwrite_no_active_playlists_error_message">
-        Presets must have at least one active track or playlist</string>
     <string name="confirm_overwrite_preset_dialog_title">Confirm overwrite preset</string>
     <string name="confirm_overwrite_preset_dialog_message">
         This will overwrite the preset %1$s. Are you sure?</string>
-
     <string name="delete">Delete</string>
     <string name="confirm_delete_preset_title">Delete %1$s?</string>
     <string name="confirm_delete_preset_message">
         This will not remove the tracks or playlists in the preset from your library.</string>
-    <string name="preset_cannot_be_empty_warning_message">
-        There are no active tracks or playlists to add to the preset</string>
-    <string name="add_preset_button_description">Create new preset</string>
-    <string name="create_new_preset_dialog_title">Enter new preset name</string>
 
+    <!-- Unsaved changes warning -->
     <string name="unsaved_preset_changes_warning_title">Unsaved changes</string>
     <string name="unsaved_preset_changes_warning_message">The preset %1$s has unsaved changes.
         If you load a new preset now, you will lose any changes made since it was last saved.</string>
     <string name="unsaved_preset_changes_warning_save_first_option">Save changes first</string>
     <string name="unsaved_preset_changes_warning_load_anyways_option">Load anyways</string>
 
+    <!-- Playback states (SINGLE DEFINITION) -->
     <string name="playing">Playing</string>
     <string name="paused">Paused</string>
     <string name="stopped">Stopped</string>
-    <string name="stop_timer_description">Stopping in %1$s</string>
-    <string name="cancel_stop_timer_action">Cancel stop timer</string>
 
+    <!-- Playback controls -->
+    <string name="play_button_description">Play SoundAura audio</string>
+    <string name="pause_button_description">Pause SoundAura audio</string>
+    <string name="play_pause_button_long_click_description">Set auto stop timer</string>
+    <string name="play_button_long_click_hint_text">
+        Hint: You can long press the play/pause button to set an automatic stop timer</string>
     <string name="play">Play</string>
     <string name="pause">Pause</string>
     <string name="close">Close</string>
-    <string name="checked">Checked</string>
-    <string name="unchecked">Unchecked</string>
-    <string name="dismiss">Dismiss</string>
-    <string name="ok" tools:ignore="Typos,ButtonCase">Ok</string>
-    <string name="cancel">Cancel</string>
 
+    <!-- Stop timer -->
+    <string name="set_stop_timer_dialog_description">
+        Set the duration after which playback will automatically be stopped.
+        You can change the amounts using the up or down buttons, or by
+        dragging the amount up or down.</string>
+    <string name="stop_timer_text">ing in</string>
+    <string name="stop_timer_click_label">Cancel auto stop timer</string>
+    <string name="stop_timer_description">Stopping in %1$s</string>
+    <string name="cancel_stop_timer_action">Cancel stop timer</string>
+    <string name="cancel_stop_timer_dialog_title">Confirm timer cancellation</string>
+    <string name="cancel_stop_timer_dialog_text">
+        Are you sure you would like to cancel the auto stop timer?</string>
+
+    <!-- Sorting -->
     <string name="show_active_playlists_first">Show active first</string>
     <string name="name_ascending">Name ascending</string>
     <string name="name_descending">Name descending</string>
     <string name="order_added">Order added</string>
 
-    <string name="play_button_long_click_hint_text">
-        Hint: You can long press the play/pause button to set an automatic stop timer</string>
-
+    <!-- Settings -->
     <string name="app_settings_description">SoundAura settings</string>
     <string name="settings">Settings</string>
-
     <string name="display">Display</string>
     <string name="app_theme">App Theme</string>
     <string name="match_system_theme">Match system</string>
     <string name="light_theme">Light</string>
     <string name="dark_theme">Dark</string>
-
     <string name="playback">Playback</string>
 
+    <!-- Play in background setting -->
     <string name="play_in_background_setting_title">Play in background</string>
     <string name="play_in_background_setting_description">Tap for additional explanation</string>
     <string name="play_in_background_explanation">Enabling play in background will:</string>
@@ -201,13 +235,14 @@
         Make playback controls appear in a regular notification instead
         of in the media controls section of the status bar</string>
     <string name="play_in_background_explanation_bullet_3">
-        Make playback ignore hardware media buttons (e.g. a headset’s
+        Make playback ignore hardware media buttons (e.g. a headset
         play/pause button) unless the app is in the foreground</string>
     <string name="play_in_background_explanation_bullet_4">
-        Prevent playback from auto-pausing during calls, unless the ‘Auto-pause during
-        calls’ setting is enabled and the read phone state permission is granted
+        Prevent playback from auto-pausing during calls, unless the Auto-pause during
+        calls setting is enabled and the read phone state permission is granted
     </string>
 
+    <!-- Notification permission -->
     <string name="request_notification_permission_title">Notification permission required</string>
     <string name="request_notification_permission_explanation_p1">
         When play in background is turned on, SoundAura must use a regular
@@ -221,9 +256,11 @@
         the notification space, you can alternatively %1$s.</string>
     <string name="tile_tutorial_link_text">control SoundAura through its quick settings tile</string>
 
+    <!-- Phone state permission -->
     <string name="auto_pause_during_calls_setting_title">Auto-pause during calls</string>
     <string name="auto_pause_during_calls_setting_subtitle">
-        Requires read phone state permission\nOnly needed when playing in background</string>
+        Requires read phone state permission
+Only needed when playing in background</string>
     <string name="request_phone_state_permission_explanation">
         When not playing audio in the background, your device will let SoundAura
         know that it should pause playback during a call. This will not occur when
@@ -231,15 +268,16 @@
         needed in this case so that SoundAura can detect when a call is ongoing
         and pause playback accordingly.</string>
 
+    <!-- Zero volume behavior -->
     <string name="on_zero_volume_behavior_setting_title">
         Behavior on zero volume</string>
     <string name="on_zero_volume_behavior_setting_description">
         This setting will determine how playback will respond to an audio
         device change that results in a volume of zero (e.g. disconnecting
-        a headset while the phone’s speakerphone volume is zero).</string>
+        a headset while the phone speakerphone volume is zero).</string>
     <string name="stop_playback_on_zero_volume_title">Stop playback</string>
     <string name="stop_playback_on_zero_volume_description">
-        Automatically stop the app’s background service.</string>
+        Automatically stop the app background service.</string>
     <string name="pause_playback_on_zero_volume_title">Pause playback</string>
     <string name="pause_playback_on_zero_volume_description">
         Playback will automatically resume if another audio device change results
@@ -252,23 +290,20 @@
         the app will remain playing even though it cannot be heard.
     </string>
 
-
+    <!-- Tile tutorial -->
     <string name="control_playback_using_tile_setting_title">
         Control playback using a tile</string>
     <string name="tile_tutorial_title">Tile Tutorial</string>
     <string name="multi_step_dialog_indicator">%1$d of %2$d</string>
-    <string name="previous">Previous</string>
-    <string name="next">Next</string>
-    <string name="finish">Finish</string>
     <string name="tile_tutorial_intro_text">
         In addition to its notification, you can control SoundAura
         through a quick settings tile.</string>
     <string name="tile_tutorial_add_tile_text">
         To add it to your active quick settings tiles, tap the fully
-        expanded status bar’s edit button, and drag the SoundAura
+        expanded status bar edit button, and drag the SoundAura
         tile into your list of current tiles.</string>
     <string name="tile_tutorial_add_tile_help_button_text">
-        Help! I can’t figure out how to add tiles.</string>
+        Help! I cannot figure out how to add tiles.</string>
     <string name="tile_tutorial_add_tile_help_button_show_description">
         show add tile help</string>
     <string name="tile_tutorial_add_tile_help_button_hide_description">
@@ -276,25 +311,27 @@
     <string name="tile_tutorial_add_tile_help_text">
         The button to edit your quick settings tiles might appear
         differently depending on your device manufacturer and
-        Android version. Try searching ‘edit quick settings tiles’
+        Android version. Try searching edit quick settings tiles
         along with your device manufacturer on an internet search
         engine.</string>
     <string name="tile_tutorial_add_tile_button_text">Add tile</string>
     <string name="tile_tutorial_tile_usage_text">
-        Tapping the tile will toggle SoundAura’s background audio
+        Tapping the tile will toggle SoundAura background audio
         service between its playing and stopped states. Long tapping
         the tile will open SoundAura.</string>
     <string name="tile_tutorial_hide_notification_text">
-        If you would like to hide SoundAura’s notification to save
-        space, you can hide it yourself in the %1$s. Tap ‘Notifications’
-        and disable the ‘Player controls’ notification.</string>
+        If you would like to hide SoundAura notification to save
+        space, you can hide it yourself in the %1$s. Tap Notifications
+        and disable the Player controls notification.</string>
     <string name="tile_tutorial_hide_notification_link_text">
         system settings page for SoundAura</string>
 
+    <!-- Stop instead of pause -->
     <string name="stop_instead_of_pause_setting_title">Stop instead of pause</string>
     <string name="stop_instead_of_pause_setting_description">
         Tracks/playlists will restart from the beginning instead of resuming</string>
 
+    <!-- About section -->
     <string name="about">About</string>
     <string name="privacy_policy_setting_title">Privacy policy</string>
     <string name="privacy_policy_setting_body">
@@ -305,12 +342,14 @@
         SoundAura is an open source ambient sound app. The source code
         is available under the terms of the Apache License, version 2.0.</string>
     <string name="view_source_code">View source code</string>
-
     <string name="github_link" translatable="false">
         https://github.com/CliffracerMerchant/SoundAura</string>
 
-    <string name="player_notification_channel_id" translatable="false">
-        player_controls</string>
+    <!-- Widget strings -->
+    <string name="widget_name">SoundAura Plus</string>
+    <string name="widget_description">Control your music and activate/deactivate tracks</string>
+    <string name="stop">Stop</string>
+    <string name="play_pause">Play/Pause</string>
+    <string name="no_active_playlists">No playback</string>
+    
 </resources>
-
-
