@@ -4,14 +4,22 @@
 package com.cliffracertech.soundaura
 
 import android.content.ComponentName
+import android.content.Intent
 import android.service.quicksettings.TileService
 import android.util.Log
 import com.cliffracertech.soundaura.service.PlayerService
+import com.cliffracertech.soundaura.service.PlaylistRecoveryService
 import com.cliffracertech.soundaura.service.TogglePlaybackTileService
+import com.cliffracertech.soundaura.model.database.SoundAuraDatabase
 import dagger.hilt.android.HiltAndroidApp
+import javax.inject.Inject
 
 @HiltAndroidApp
 class SoundAuraApplication : android.app.Application() {
+    
+    @Inject
+    lateinit var database: SoundAuraDatabase
+
     override fun onCreate() {
         super.onCreate()
 
@@ -20,6 +28,11 @@ class SoundAuraApplication : android.app.Application() {
                 TileService.requestListeningState(
                     this, ComponentName(this, TogglePlaybackTileService::class.java))
         }
+
+        // --- NUEVO: Iniciar el servicio de recuperación al arrancar la app ---
+        // Esto intentará adquirir permisos persistentes para todos los tracks existentes.
+        val recoveryIntent = Intent(this, PlaylistRecoveryService::class.java)
+        startService(recoveryIntent)
     }
 }
 

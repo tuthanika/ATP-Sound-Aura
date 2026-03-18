@@ -1,6 +1,7 @@
-/* This file is part of SoundAura, which is released under
- * the terms of the Apache License 2.0. See license.md in
- * the project's root directory to see the full license. */
+/*
+ * This file is part of SoundAura, which is released under the terms of the Apache
+ * License 2.0. See license.md in the project's root directory to see the full license.
+ */
 package com.cliffracertech.soundaura.model
 
 import android.Manifest
@@ -29,11 +30,14 @@ interface UriPermissionHandler {
     val remainingAllowance get() = totalAllowance - usedAllowance
 
     /**
-     * Acquire permissions for each file [Uri] in [uris], if space permits. If
-     * the size of [uris] is greater than the remaining permission count, then
-     * no permissions will be acquired.
+     * Acquire permissions for each file [Uri] in [uris].
      *
-     * @return Whether all of the permissions were successfully acquired
+     * The implementation should first attempt to acquire persistent permissions.
+     * If that fails or is not possible, it may fall back to checking for general
+     * storage permissions.
+     *
+     * @return Whether all of the permissions were successfully acquired or the app
+     * already has general storage permissions as a fallback.
      */
     fun acquirePermissionsFor(uris: List<Uri>): Boolean
 
@@ -88,22 +92,44 @@ class AndroidUriPermissionHandler @Inject constructor(
     override val usedAllowance get() =
         context.contentResolver.persistedUriPermissions.size
 
-    override fun acquirePermissionsFor(uris: List<Uri>): Boolean = when {
-        hasStoragePermission -> true
-        remainingAllowance < uris.size -> false
-        else -> {
+    override fun acquirePermissionsFor(uris: List<Uri>): Boolean {
+        // --- SOLUCIÓN: Siempre intentar permisos persistentes si hay espacio ---
+        // 1. Verificar si tenemos espacio en el límite de permisos persistentes
+        if (remainingAllowance >= uris.size) {
             var successfulGrants = 0
-            for (uri in uris) try {
-                context.contentResolver.takePersistableUriPermission(uri, modeFlags)
-                successfulGrants++
-            } catch (e: SecurityException) {
-                logd("Attempted to obtain a persistable permission for " +
-                     "$uri when no persistable permission was granted.")
-                releasePermissionsFor(uris.subList(0, successfulGrants))
-                break
+            for (uri in uris) {
+                try {
+                    context.contentResolver.takePersistableUriPermission(uri, modeFlags)
+                    successfulGrants++
+                } catch (e: SecurityException) {
+                    logd("Attempted to obtain a persistable permission for " +
+                         "$uri when no persistable permission was granted.")
+                    // Si falla para una URI, liberamos las que sí se concedieron
+                    // para no dejar el sistema en un estado inconsistente.
+                    if (successfulGrants > 0) {
+                        releasePermissionsFor(uris.subList(0, successfulGrants))
+                    }
+                    // Salimos del bucle y procedemos a la lógica de respaldo
+                    break
+                }
             }
-            successfulGrants == uris.size
+
+            // Si logramos obtener permisos persistentes para todos, ¡éxito!
+            if (successfulGrants == uris.size) {
+                return true
+            }
         }
+
+        // 2. Si no hay espacio (superamos el límite) o falló obtener permisos persistentes,
+        // caemos en usar el permiso de almacenamiento general como respaldo.
+        // Nota: Este es un respaldo, no la primera opción.
+        if (hasStoragePermission) {
+            logd("Falling back to general storage permission for ${uris.size} URIs.")
+            return true
+        }
+
+        // 3. Si no tenemos permisos persistentes ni permisos generales, la operación falla.
+        return false
     }
 
     override fun releasePermissionsFor(uris: List<Uri>) {

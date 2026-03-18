@@ -53,5 +53,73 @@
             <meta-data android:name="android.service.quicksettings.TOGGLEABLE_TILE"
                 android:value="true" />
         </service>
+    
+        <!-- WIDGET: Provider principal -->
+        <receiver android:name=".widget.SoundAuraWidget"
+            android:exported="true"
+            android:label="@string/widget_name"
+            android:description="@string/widget_description">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.appwidget.action.APPWIDGET_ENABLED" />
+                <action android:name="android.appwidget.action.APPWIDGET_DISABLED" />
+                <action android:name="android.appwidget.action.APPWIDGET_DELETED" />
+                <action android:name="android.appwidget.action.APPWIDGET_OPTIONS_CHANGED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info" />
+        </receiver>
+
+        <!-- WIDGET: Receiver para acciones de los botones -->
+        <receiver android:name=".widget.SoundAuraWidgetReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.cliffracertech.soundaura.widget.ACTION_PLAY_PAUSE" />
+                <action android:name="com.cliffracertech.soundaura.widget.ACTION_STOP" />
+                <action android:name="com.cliffracertech.soundaura.widget.ACTION_TOGGLE_PLAYLIST" />
+                <action android:name="com.cliffracertech.soundaura.widget.ACTION_UPDATE_WIDGET" />
+            </intent-filter>
+        </receiver>
+
+        <!-- WIDGET: Servicio de actualización periódica -->
+        <service android:name=".widget.SoundAuraWidgetService"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
+
+        <!-- Proveedor de contenido para el widget -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+        
+        <!-- WIDGET: Servicio para la lista del widget -->
+        <service
+            android:name=".widget.SoundAuraWidgetListService"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
+
+        <!-- WIDGET: Preset Widget Receiver -->
+        <receiver android:name=".widget.PresetWidget"
+            android:exported="false"
+            android:label="@string/presets_widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.cliffracertech.soundaura.widget.ACTION_UPDATE_WIDGET" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/preset_widget_info" />
+        </receiver>
+
+        <!-- WIDGET: Preset Widget List Service -->
+        <service android:name=".widget.PresetWidgetListService"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
+
     </application>
 </manifest>

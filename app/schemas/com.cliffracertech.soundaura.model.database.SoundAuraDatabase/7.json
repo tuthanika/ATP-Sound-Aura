@@ -65,8 +65,7 @@
             "orders": [],
             "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_playlist_name` ON `${TABLE_NAME}` (`name`)"
           }
-        ],
-        "foreignKeys": []
+        ]
       },
       {
         "tableName": "playlistTrack",
@@ -98,7 +97,6 @@
             "trackUri"
           ]
         },
-        "indices": [],
         "foreignKeys": [
           {
             "table": "playlist",
@@ -147,9 +145,7 @@
           "columnNames": [
             "uri"
           ]
-        },
-        "indices": [],
-        "foreignKeys": []
+        }
       },
       {
         "tableName": "preset",
@@ -167,9 +163,7 @@
           "columnNames": [
             "name"
           ]
-        },
-        "indices": [],
-        "foreignKeys": []
+        }
       },
       {
         "tableName": "presetPlaylist",
@@ -201,7 +195,6 @@
             "playlistName"
           ]
         },
-        "indices": [],
         "foreignKeys": [
           {
             "table": "playlist",
@@ -228,7 +221,6 @@
         ]
       }
     ],
-    "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
       "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '878275f643036dba792bc5928e7bfa1d')"

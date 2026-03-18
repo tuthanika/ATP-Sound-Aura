@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This file is part of SoundAura, which is released under
+   ~ the terms of the Apache License 2.0. See license.md in
+   ~ the project's root directory to see the full license. -->
+
+<resources xmlns:tools="http://schemas.android.com/tools">
+    
+    <!-- App name (no translation) -->
+    <string name="app_name" translatable="false">SoundAuraPlus</string>
+
+    <!-- Service descriptions -->
+    <string name="app_player_service_description">Un servicio para reproducir la mezcla de sonido del usuario.</string>
+    <string name="player_notification_channel_name">Controles del reproductor</string>
+    <string name="player_notification_channel_description">
+        Una notificación con controles para el servicio de audio en segundo plano de SoundAura.
+    </string>
+    <string name="player_no_active_playlists_warning_message">
+        No hay pistas o listas de reproducción activas. Toca el botón de agregar de una pista o lista primero.
+    </string>
+    <string name="player_notification_channel_id" translatable="false">player_controls</string>
+
+    <!-- Quick Settings Tile -->
+    <string name="tile_inactive_description">Reproducir audio de SoundAura</string>
+    <string name="tile_active_description">Detener audio de SoundAura</string>
+
+    <!-- App bar -->
+    <string name="back">Atrás</string>
+    <string name="search">Buscar</string>
+    <string name="sort_options_description">Abrir opciones de ordenamiento</string>
+
+    <!-- Library view -->
+    <string name="empty_library_message">Tu biblioteca está vacía.\n\nToca el botón de agregar abajo para añadir
+        archivos locales a tu biblioteca.\n\nToca el símbolo de más junto a una pista o lista agregada para
+        hacerla parte de la mezcla de sonido cuando se inicie la reproducción.</string>
+    <string name="no_search_results_message">No hay pistas/listas que coincidan con la búsqueda.</string>
+    <string name="set_playlist_active_description">Activar %s</string>
+    <string name="set_playlist_inactive_description">Desactivar %s</string>
+    <string name="playlist_error_message">Archivos faltantes/corruptos</string>
+    <string name="item_options_button_description">Más opciones de %1$s</string>
+    <string name="remove_item_description">Eliminar %1$s</string>
+
+    <!-- Dialogs general -->
+    <string name="rename">Renombrar</string>
+    <string name="default_rename_dialog_title">Ingresa el nuevo nombre</string>
+    <string name="remove">Eliminar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="ok" tools:ignore="Typos,ButtonCase">Aceptar</string>
+    <string name="dismiss">Descartar</string>
+    <string name="finish">Finalizar</string>
+    <string name="previous">Anterior</string>
+    <string name="next">Siguiente</string>
+    <string name="checked">Seleccionado</string>
+    <string name="unchecked">No seleccionado</string>
+
+    <!-- Volume boost -->
+    <string name="volume_boost_description">Aumentar volumen</string>
+    <string name="volume_boost_explanation_part_1">Esto aumentará el volumen de la
+        lista/pista antes de que se aplique el volumen regular. Cada aumento de 10\u2009dB
+        resulta en una percepción de duplicación del volumen. Por ejemplo:</string>
+    <!-- u2009 is half-space, u00D7 is multiplication sign -->
+    <string name="volume_boost_explanation_part_2">
+        +\u200910\u2009dB = 2\u00D7 volumen
+        \n+\u200920\u2009dB = 4\u00D7 volumen
+        \n+\u200930\u2009dB = 8\u00D7 volumen</string>
+
+    <!-- Remove confirmation -->
+    <string name="confirm_remove_title">¿Eliminar %1$s?</string>
+    <string name="confirm_remove_track_message">Esto eliminará la pista de tu biblioteca
+        y de cualquier preset del que forme parte, pero no eliminará el archivo de tu dispositivo.</string>
+    <string name="confirm_remove_playlist_message">
+        Esto eliminará la lista de reproducción de tu biblioteca y de cualquier preset del que
+        forme parte, pero no eliminará los archivos de la lista de tu dispositivo.</string>
+
+    <!-- Playlist options -->
+    <string name="create_playlist_title">Crear lista</string>
+    <string name="playlist_options_title">Opciones de lista</string>
+    <string name="playlist_track_count_description">%1$s pista(s)</string>
+    <string name="playlist_shuffle_switch_title">Aleatorio</string>
+    <string name="playlist_shuffle_switch_description">Activar/desactivar aleatorio</string>
+    <string name="playlist_track_handle_description">Reordenar pista %1$s</string>
+    <string name="playlist_track_error_message">Archivo faltante/corrupto:</string>
+    <string name="playlist_track_delete_description">Eliminar %1$s</string>
+    <string name="playlist_add_tracks_button_description">Añadir pistas a %1$s</string>
+    <string name="configure_playlist_dialog_title">Configurar opciones de lista</string>
+
+    <!-- File chooser -->
+    <string name="file_chooser_no_valid_tracks_error_message">
+        Elige al menos un archivo que no esté ya en la lista</string>
+    <string name="file_chooser_invalid_tracks_warning_message">
+        %1$d de los archivos ya estaban en la lista</string>
+
+    <!-- Storage permission -->
+    <string name="playlist_options_request_storage_permission_explanation">
+        SoundAura ha usado %1$d de los %2$d permisos de archivo que Android permite
+        para apps sin acceso completo al almacenamiento. El permiso de lectura de archivos de audio debe
+        concederse para añadir las nuevas pistas a la lista.
+    </string>
+    <string name="add_local_files_request_storage_permission_title">Espacio insuficiente</string>
+    <string name="add_local_files_request_storage_permission_explanation_for_tracks">
+        SoundAura ha usado %1$d de los %2$d permisos de archivo que Android permite
+        para apps sin acceso completo al almacenamiento. El permiso de lectura de archivos de audio debe
+        concederse para añadir todas las pistas.
+    </string>
+    <string name="add_local_files_request_storage_permission_explanation_for_playlist">
+        SoundAura ha usado %1$d de los %2$d permisos de archivo que Android permite
+        para apps sin acceso completo al almacenamiento. El permiso de lectura de archivos de audio debe
+        concederse para añadir la lista completa.
+    </string>
+
+    <!-- Add button -->
+    <string name="add_local_files_button_description">Añadir pistas o listas desde archivos locales</string>
+    <string name="add_local_files_as_playlist_or_tracks_title">Añadir archivo(s) local(es)</string>
+    <string name="add_local_files_as_playlist_or_tracks_question">
+        ¿Añadir archivos como pistas individuales o como lista?</string>
+    <string name="add_local_files_individually_option">Individualmente</string>
+    <string name="add_local_files_as_playlist_option">Lista</string>
+    <string name="add_local_files_as_tracks_dialog_title">Confirmar nombre(s) de pista</string>
+    <string name="add_local_files_as_playlist_dialog_title">Confirmar nombre de lista</string>
+    <string name="add_preset_button_description">Crear nuevo preset</string>
+    <string name="create_new_preset_dialog_title">Ingresa el nombre del nuevo preset</string>
+    <string name="add">Agregar</string>
+
+    <!-- Name validation -->
+    <string name="add_multiple_tracks_name_error_message">Las pistas deben tener nombres únicos y no vacíos</string>
+    <string name="name_dialog_blank_name_error_message">El nombre no puede estar vacío</string>
+    <string name="name_dialog_duplicate_name_error_message">El nombre ya está en uso</string>
+
+    <!-- Error messages -->
+    <string name="cant_add_tracks_warning">
+        Los archivos no pudieron añadirse porque se excedería el límite de permisos
+        de archivo de Android. Elimina algunas pistas o listas e inténtalo de nuevo,
+        o concede a la app el permiso de lectura de archivos.</string>
+    <string name="cant_add_playlist_warning">
+        La lista no pudo añadirse porque se excedería el límite de permisos
+        de archivo de Android. Elimina algunas pistas o listas e inténtalo de nuevo,
+        o concede a la app el permiso de lectura de archivos.</string>
+    <string name="cant_add_playlist_tracks_warning">
+        Las nuevas pistas no pudieron añadirse a la lista porque se excedería el límite
+        de permisos de archivo de Android. Elimina algunas pistas o listas e
+        inténtalo de nuevo, o concede a la app el permiso de lectura de archivos.
+    </string>
+    <string name="overwrite_no_active_playlists_error_message">
+        Los presets deben tener al menos una pista o lista activa</string>
+    <string name="preset_cannot_be_empty_warning_message">
+        No hay pistas o listas activas para añadir al preset</string>
+
+    <!-- Presets -->
+    <string name="preset_button_click_label">Cambiar preset activo</string>
+    <string name="unsaved_preset_description">Preset sin guardar</string>
+    <string name="preset_selector_title">Seleccionar un preset</string>
+    <string name="empty_preset_list_message">No tienes presets guardados.
+        Toca el botón de agregar abajo para guardar la mezcla de sonido actual como preset.</string>
+    <string name="preset_click_label">Cargar preset %1$s</string>
+    <string name="close_preset_selector_description">Cerrar selector de presets</string>
+    <string name="overwrite">Sobrescribir</string>
+    <string name="confirm_overwrite_preset_dialog_title">Confirmar sobrescritura de preset</string>
+    <string name="confirm_overwrite_preset_dialog_message">
+        Esto sobrescribirá el preset %1$s. ¿Estás seguro?</string>
+    <string name="delete">Eliminar</string>
+    <string name="confirm_delete_preset_title">¿Eliminar %1$s?</string>
+    <string name="confirm_delete_preset_message">
+        Esto no eliminará las pistas o listas del preset de tu biblioteca.</string>
+
+    <!-- Unsaved changes warning -->
+    <string name="unsaved_preset_changes_warning_title">Cambios sin guardar</string>
+    <string name="unsaved_preset_changes_warning_message">El preset %1$s tiene cambios sin guardar.
+        Si cargas un nuevo preset ahora, perderás los cambios realizados desde el último guardado.</string>
+    <string name="unsaved_preset_changes_warning_save_first_option">Guardar cambios primero</string>
+    <string name="unsaved_preset_changes_warning_load_anyways_option">Cargar de todas formas</string>
+
+    <!-- Playback states (SINGLE DEFINITION) -->
+    <string name="playing">Reproduciendo</string>
+    <string name="paused">En pausa</string>
+    <string name="stopped">Detenido</string>
+
+    <!-- Playback controls -->
+    <string name="play_button_description">Reproducir audio de SoundAura</string>
+    <string name="pause_button_description">Pausar audio de SoundAura</string>
+    <string name="play_pause_button_long_click_description">Establecer temporizador de parada</string>
+    <string name="play_button_long_click_hint_text">
+        Consejo: Puedes mantener presionado el botón de reproducir/pausar para establecer un temporizador de parada automática</string>
+    <string name="play">Reproducir</string>
+    <string name="pause">Pausar</string>
+    <string name="close">Cerrar</string>
+
+    <!-- Stop timer -->
+    <string name="set_stop_timer_dialog_description">
+        Establece la duración tras la cual la reproducción se detendrá automáticamente.
+        Puedes cambiar las cantidades usando los botones arriba/abajo, o
+        arrastrando la cantidad hacia arriba o abajo.</string>
+    <string name="stop_timer_text">detiene en</string>
+    <string name="stop_timer_click_label">Cancelar temporizador de parada</string>
+    <string name="stop_timer_description">Deteniendo en %1$s</string>
+    <string name="cancel_stop_timer_action">Cancelar temporizador</string>
+    <string name="cancel_stop_timer_dialog_title">Confirmar cancelación</string>
+    <string name="cancel_stop_timer_dialog_text">
+        ¿Estás seguro de que quieres cancelar el temporizador de parada automática?</string>
+
+    <!-- Sorting -->
+    <string name="show_active_playlists_first">Mostrar activos primero</string>
+    <string name="name_ascending">Nombre ascendente</string>
+    <string name="name_descending">Nombre descendente</string>
+    <string name="order_added">Orden de agregado</string>
+
+    <!-- Settings -->
+    <string name="app_settings_description">Configuración de SoundAura</string>
+    <string name="settings">Configuración</string>
+    <string name="display">Pantalla</string>
+    <string name="app_theme">Tema de la app</string>
+    <string name="match_system_theme">Seguir sistema</string>
+    <string name="light_theme">Claro</string>
+    <string name="dark_theme">Oscuro</string>
+    <string name="playback">Reproducción</string>
+
+    <!-- Play in background setting -->
+    <string name="play_in_background_setting_title">Reproducir en segundo plano</string>
+    <string name="play_in_background_setting_description">Toca para más información</string>
+    <string name="play_in_background_explanation">Activar reproducción en segundo plano:</string>
+    <string name="play_in_background_explanation_bullet_1">
+        Permitirá la reproducción junto con otras apps</string>
+    <string name="play_in_background_explanation_bullet_2">
+        Mostrará los controles en una notificación regular en lugar de en la sección de controles multimedia</string>
+    <string name="play_in_background_explanation_bullet_3">
+        Ignorará los botones de hardware (ej. botón de auricular) a menos que la app esté en primer plano</string>
+    <string name="play_in_background_explanation_bullet_4">
+        Evitará la pausa automática durante llamadas, a menos que la opción \'Pausar durante llamadas\' esté activada
+    </string>
+
+    <!-- Notification permission -->
+    <string name="request_notification_permission_title">Permiso de notificaciones requerido</string>
+    <string name="request_notification_permission_explanation_p1">
+        Cuando la reproducción en segundo plano está activada, SoundAura debe usar una notificación
+        regular para mostrar los controles del reproductor. Para hacer esto, necesita permiso
+        para publicar notificaciones. Esto es opcional, pero sin permiso SoundAura no podrá
+        mostrar una notificación con controles cuando la reproducción en segundo plano está activada.</string>
+    <string name="request_notification_permission_explanation_p2">
+        Si prefieres no conceder permiso, o si quieres ahorrar espacio de notificaciones,
+        puedes alternativamente %1$s.</string>
+    <string name="tile_tutorial_link_text">controlar SoundAura mediante su botón de ajustes rápidos</string>
+
+    <!-- Phone state permission -->
+    <string name="auto_pause_during_calls_setting_title">Pausar durante llamadas</string>
+    <string name="auto_pause_during_calls_setting_subtitle">
+        Requiere permiso de estado del teléfono\nSolo necesario cuando se reproduce en segundo plano</string>
+    <string name="request_phone_state_permission_explanation">
+        Cuando no se reproduce audio en segundo plano, tu dispositivo le indicará a SoundAura
+        que debe pausar la reproducción durante una llamada. Esto no ocurrirá cuando el
+        audio se reproduce en segundo plano. El permiso de estado del teléfono es
+        necesario en este caso para que SoundAura pueda detectar cuando hay una llamada
+        en curso y pausar la reproducción.</string>
+
+    <!-- Zero volume behavior -->
+    <string name="on_zero_volume_behavior_setting_title">
+        Comportamiento en volumen cero</string>
+    <string name="on_zero_volume_behavior_setting_description">
+        Esta configuración determina cómo responderá la reproducción a un cambio de
+        dispositivo de audio que resulte en volumen cero (ej. desconectar auriculares
+        mientras el volumen del altavoz del teléfono es cero).</string>
+    <string name="stop_playback_on_zero_volume_title">Detener reproducción</string>
+    <string name="stop_playback_on_zero_volume_description">
+        Detiene automáticamente el servicio en segundo plano.</string>
+    <string name="pause_playback_on_zero_volume_title">Pausar reproducción</string>
+    <string name="pause_playback_on_zero_volume_description">
+        La reproducción se reanudará automáticamente si otro cambio de dispositivo resulta
+        en volumen mayor a cero. Esta opción puede aumentar ligeramente el uso de batería
+        debido a que la app permanece en pausa en segundo plano.</string>
+    <string name="do_nothing_on_zero_volume_title">No hacer nada</string>
+    <string name="do_nothing_on_zero_volume_description">
+        Esta opción resultará en el mayor uso de batería porque la app seguirá
+        reproduciendo aunque no pueda oírse.
+    </string>
+
+    <!-- Tile tutorial -->
+    <string name="control_playback_using_tile_setting_title">
+        Controlar reproducción mediante botón</string>
+    <string name="tile_tutorial_title">Tutorial del botón</string>
+    <string name="multi_step_dialog_indicator">%1$d de %2$d</string>
+    <string name="tile_tutorial_intro_text">
+        Además de su notificación, puedes controlar SoundAura mediante un botón
+        de ajustes rápidos.</string>
+    <string name="tile_tutorial_add_tile_text">
+        Para añadirlo a tus botones activos, toca el botón de editar de la barra
+        de estado completamente expandida y arrastra el botón de SoundAura a tu
+        lista de botones actuales.</string>
+    <string name="tile_tutorial_add_tile_help_button_text">
+        ¡Ayuda! No sé cómo añadir botones.</string>
+    <string name="tile_tutorial_add_tile_help_button_show_description">
+        mostrar ayuda para añadir botón</string>
+    <string name="tile_tutorial_add_tile_help_button_hide_description">
+        ocultar ayuda para añadir botón</string>
+    <string name="tile_tutorial_add_tile_help_text">
+        El botón para editar tus botones de ajustes rápidos puede verse diferente
+        según el fabricante y la versión de Android. Prueba buscar \'editar botones
+        de ajustes rápidos\' junto con tu fabricante en un buscador de internet.</string>
+    <string name="tile_tutorial_add_tile_button_text">Añadir botón</string>
+    <string name="tile_tutorial_tile_usage_text">
+        Tocar el botón alternará el servicio de audio de SoundAura entre reproducción
+        y detenido. Mantener presionado el botón abrirá SoundAura.</string>
+    <string name="tile_tutorial_hide_notification_text">
+        Si quieres ocultar la notificación de SoundAura para ahorrar espacio,
+        puedes ocultarla en %1$s. Toca \'Notificaciones\' y desactiva la
+        notificación \'Controles del reproductor\'.</string>
+    <string name="tile_tutorial_hide_notification_link_text">
+        la página de configuración del sistema de SoundAura</string>
+
+    <!-- Stop instead of pause -->
+    <string name="stop_instead_of_pause_setting_title">Detener en lugar de pausar</string>
+    <string name="stop_instead_of_pause_setting_description">
+        Las pistas/listas se reiniciarán desde el principio en lugar de reanudarse</string>
+
+    <!-- About section -->
+    <string name="about">Acerca de</string>
+    <string name="privacy_policy_setting_title">Política de privacidad</string>
+    <string name="privacy_policy_setting_body">
+        SoundAura no recopila, almacena ni transmite información personal.</string>
+    <string name="open_source_licenses">Licencias de código abierto</string>
+    <string name="about_app_setting_title">Acerca de SoundAura</string>
+    <string name="about_app_setting_body">
+        SoundAura es una app de sonido ambiente de código abierto. El código fuente
+        está disponible bajo los términos de la Licencia Apache, versión 2.0.</string>
+    <string name="view_source_code">Ver código fuente</string>
+    <string name="github_link" translatable="false">
+        https://github.com/CliffracerMerchant/SoundAura</string>
+
+    <!-- Widget strings -->
+    <string name="widget_name">SoundAuraPlus</string>
+    <string name="widget_description">Controla tu música y activa/desactiva pistas</string>
+    <string name="stop">Detener</string>
+    <string name="play_pause">Reproducir/Pausar</string>
+    <string name="no_active_playlists">Sin reproducción</string>
+    
+</resources>

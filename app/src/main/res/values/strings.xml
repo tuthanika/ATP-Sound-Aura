@@ -351,5 +351,9 @@ Only needed when playing in background</string>
     <string name="stop">Stop</string>
     <string name="play_pause">Play/Pause</string>
     <string name="no_active_playlists">No playback</string>
-    
+    <string name="presets_widget_label">SoundAura Presets</string>
+    <string name="presets">Presets</string>
+    <string name="play_pause_description">Toggle Play/Pause</string>
+    <string name="stop_description">Stop Playback</string>
+    <string name="load">Load</string>
 </resources>
