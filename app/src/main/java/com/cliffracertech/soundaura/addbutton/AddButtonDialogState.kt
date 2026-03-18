@@ -206,11 +206,14 @@ sealed class AddButtonDialogState(
         onDismissRequest: () -> Unit,
         onBackClick: () -> Unit,
         trackUris: List<Uri>,
-        private val onFinish: (shuffleEnabled: Boolean, newTrackList: List<Track>) -> Unit,
+        private val onFinish: (shuffleEnabled: Boolean, playSequentially: Boolean, newTrackList: List<Track>) -> Unit,
     ): AddButtonDialogState(onDismissRequest) {
         var shuffleEnabled by mutableStateOf(false)
             private set
+        var playSequentially by mutableStateOf(true)
+            private set
         val onShuffleSwitchClick = { shuffleEnabled = !shuffleEnabled }
+        val onPlaybackModeSwitchClick = { playSequentially = !playSequentially }
         val mutablePlaylist = MutablePlaylist(trackUris.map(::Track))
 
         override val wasNavigatedForwardTo = true
@@ -218,7 +221,7 @@ sealed class AddButtonDialogState(
         override val buttons = listOf(
             ButtonInfo(R.string.back, onClick = onBackClick),
             ButtonInfo(R.string.finish, onClick = {
-                onFinish(shuffleEnabled, mutablePlaylist.applyChanges())
+                onFinish(shuffleEnabled, playSequentially, mutablePlaylist.applyChanges())
             }))
     }
 

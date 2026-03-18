@@ -43,7 +43,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.Loop
 import androidx.compose.material.icons.filled.Undo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -160,6 +160,7 @@ val RemovablePlaylistTrack.track get() = first
 val RemovablePlaylistTrack.uri get() = first.uri
 val RemovablePlaylistTrack.hasError get() = first.hasError
 val RemovablePlaylistTrack.markedForRemoval get() = second
+val RemovablePlaylistTrack.loopEnabled get() = first.loopEnabled
 
 /**
  * MutablePlaylist represents the state of a list of reorderable [RemovablePlaylistTrack]s.
@@ -198,6 +199,12 @@ class MutablePlaylist(tracks: List<Track>) {
     fun applyChanges() = mutableTracks.mapNotNull {
         if (it.markedForRemoval) null else it.track
     }
+
+    fun toggleTrackLoop(index: Int) {
+        if (index !in tracks.indices) return
+        val (track, removed) = mutableTracks[index]
+        mutableTracks[index] = track.copy(loopEnabled = !track.loopEnabled) to removed
+    }
 }
 
 /**
@@ -215,6 +222,8 @@ class MutablePlaylist(tracks: List<Track>) {
 @Composable fun ColumnScope.PlaylistOptionsView(
     shuffleEnabled: Boolean,
     onShuffleClick: () -> Unit,
+    playSequentially: Boolean,
+    onPlaybackModeClick: () -> Unit,
     mutablePlaylist: MutablePlaylist,
     onAddButtonClick: (() -> Unit)? = null,
 ) {
@@ -227,12 +236,15 @@ class MutablePlaylist(tracks: List<Track>) {
         PlaylistOptionsShuffleSwitch(shuffleEnabled, onShuffleClick)
     }
     HorizontalDivider(Modifier.padding(horizontal = 8.dp))
+    Row(modifier = Modifier.fillMaxWidth().height(56.dp)) {
+        PlaylistOptionsPlaybackModeSwitch(playSequentially, onPlaybackModeClick)
+    }
+    HorizontalDivider(Modifier.padding(horizontal = 8.dp))
     // The track list ordering must have its height restricted to
     // prevent a crash due to nested infinite height layouts. The
     // dialog's title, shuffle switch, and button row should all
-    // have heights of 48.dp, for a total height of 48.dp * 3. An
-    // extra 48.dp padding added to it makes it 48.dp * 4 = 192.dp.
-    val maxHeight = LocalWindowInfo.current.containerSize.height.dp - 192.dp
+    // have heights of 48.dp, for a total height of 48.dp * 4.
+    val maxHeight = LocalWindowInfo.current.containerSize.height.dp - 240.dp
     PlaylistOptionsTrackList(
         modifier = Modifier.heightIn(max = maxHeight),
         mutablePlaylist = mutablePlaylist,
@@ -285,15 +297,34 @@ class MutablePlaylist(tracks: List<Track>) {
             R.string.playlist_shuffle_switch_description),
         role = Role.Switch,
         onClick = onClick)
-    .padding(end = 12.dp),
+    .padding(horizontal = 10.dp),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.Center
 ) {
-    Icon(Icons.Default.Shuffle, null, Modifier.padding(12.dp))
-    Text(stringResource(R.string.playlist_shuffle_switch_title))
+    Text(stringResource(R.string.playlist_shuffle_switch_title), maxLines = 1)
     Switch(checked = shuffleEnabled,
         onCheckedChange = { onClick() },
-        modifier = Modifier.padding(start = 8.dp))
+        modifier = Modifier.padding(start = 6.dp))
+}
+
+
+@Composable private fun RowScope.PlaylistOptionsPlaybackModeSwitch(
+    playSequentially: Boolean,
+    onClick: () -> Unit,
+) = Row(
+    modifier = Modifier
+        .weight(1f)
+        .fillMaxHeight()
+        .clickable(
+            onClickLabel = stringResource(R.string.playlist_playback_mode_switch_description),
+            role = Role.Switch,
+            onClick = onClick)
+        .padding(horizontal = 12.dp),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.Center
+) {
+    Text(if (playSequentially) stringResource(R.string.playlist_playback_mode_sequential) else stringResource(R.string.playlist_playback_mode_simultaneous))
+    Switch(checked = playSequentially, onCheckedChange = { onClick() }, modifier = Modifier.padding(start = 8.dp))
 }
 
 @Composable private fun PlaylistOptionsTrackList(
@@ -348,16 +379,21 @@ class MutablePlaylist(tracks: List<Track>) {
                     MarqueeText("$errorMessage…${File.separatorChar}$name",
                                 Modifier.weight(1f))
 
-                    if (!allowDeletion)
-                        Spacer(Modifier.width(16.dp))
-                    else SimpleIconButton(
-                        icon = if (markedForRemoval) Icons.Default.Undo
-                               else                  Icons.Default.Delete,
-                        contentDescription = stringResource(
-                            R.string.playlist_track_delete_description, name),
-                        iconPadding = if (markedForRemoval) 11.dp
-                                      else                  13.dp,
-                        onClick = { mutablePlaylist.toggleTrackRemoval(index) })
+                    if (!allowDeletion) Spacer(Modifier.width(16.dp))
+                    else {
+                        SimpleIconButton(
+                            icon = Icons.Default.Loop,
+                            contentDescription = stringResource(R.string.playlist_track_loop_description, name),
+                            iconPadding = 10.dp,
+                            tint = if (track.loopEnabled) MaterialTheme.colors.primaryVariant else LocalContentColor.current.copy(alpha = 0.45f),
+                            onClick = { mutablePlaylist.toggleTrackLoop(index) })
+                        SimpleIconButton(
+                            icon = if (markedForRemoval) Icons.Default.Undo else Icons.Default.Delete,
+                            contentDescription = stringResource(
+                                R.string.playlist_track_delete_description, name),
+                            iconPadding = if (markedForRemoval) 11.dp else 13.dp,
+                            onClick = { mutablePlaylist.toggleTrackRemoval(index) })
+                    }
                 }
             }
         }
@@ -376,6 +412,8 @@ class MutablePlaylist(tracks: List<Track>) {
         PlaylistOptionsView(
             shuffleEnabled = shuffleEnabled,
             onShuffleClick = { shuffleEnabled = !shuffleEnabled },
+            playSequentially = true,
+            onPlaybackModeClick = {},
             mutablePlaylist = mutablePlaylist,
             onAddButtonClick = {})
     }}

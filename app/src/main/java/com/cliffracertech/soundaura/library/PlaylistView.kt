@@ -4,8 +4,6 @@
 package com.cliffracertech.soundaura.library
 
 import androidx.annotation.FloatRange
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -25,6 +23,7 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Loop
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.runtime.Composable
@@ -42,7 +41,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cliffracertech.soundaura.R
 import com.cliffracertech.soundaura.rememberMutableStateOf
-import com.cliffracertech.soundaura.ui.MarqueeText
 import com.cliffracertech.soundaura.ui.minTouchTargetSize
 import com.cliffracertech.soundaura.ui.theme.SoundAuraTheme
 import kotlin.math.roundToInt
@@ -68,6 +66,9 @@ data class Playlist(
     val name: String,
     val isActive: Boolean,
     val isSingleTrack: Boolean,
+    val shuffle: Boolean = false,
+    val playSequentially: Boolean = true,
+    val loopEnabled: Boolean = true,
     val volume: Float = 1.0f,
     val volumeBoostDb: Int = 0,
     val hasError: Boolean = false)
@@ -87,6 +88,8 @@ interface PlaylistViewCallback {
     /** The callback that will be invoked when the 'playlist options' or
      * 'create playlist' option of the playlist's options menu is clicked */
     fun onExtraOptionsClick(playlist: Playlist)
+    /** The callback that will be invoked when the toggle loop option is clicked */
+    fun onToggleLoopClick(playlist: Playlist)
     /** The callback that will be invoked when the 'volume boost'
      * option in the playlist's options menu is clicked */
     fun onVolumeBoostClick(playlist: Playlist)
@@ -102,6 +105,7 @@ interface PlaylistViewCallback {
     onVolumeChangeFinished: (Playlist, Float) -> Unit = { _, _ -> },
     onRenameClick: (Playlist) -> Unit = {},
     onExtraOptionsClick: (Playlist) -> Unit = {},
+    onToggleLoopClick: (Playlist) -> Unit = {},
     onVolumeBoostClick: (Playlist) -> Unit = {},
     onRemoveClick: (Playlist) -> Unit = {}
 ) = remember { object: PlaylistViewCallback {
@@ -110,6 +114,7 @@ interface PlaylistViewCallback {
     override fun onVolumeChangeFinished(playlist: Playlist, volume: Float) = onVolumeChangeFinished(playlist, volume)
     override fun onRenameClick(playlist: Playlist) = onRenameClick(playlist)
     override fun onExtraOptionsClick(playlist: Playlist) = onExtraOptionsClick(playlist)
+    override fun onToggleLoopClick(playlist: Playlist) = onToggleLoopClick(playlist)
     override fun onVolumeBoostClick(playlist: Playlist) = onVolumeBoostClick(playlist)
     override fun onRemoveClick(playlist: Playlist) = onRemoveClick(playlist)
 }}
@@ -129,6 +134,7 @@ interface PlaylistViewCallback {
 @Composable fun PlaylistView(
     playlist: Playlist,
     callback: PlaylistViewCallback,
+    lightweightContent: Boolean = false,
     modifier: Modifier = Modifier
 ) = Surface(modifier, MaterialTheme.shapes.large) {
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -146,20 +152,44 @@ interface PlaylistViewCallback {
 
         val volumeSliderInteractionSource = remember { MutableInteractionSource() }
         var volumeSliderValue by remember(playlist.volume) { mutableFloatStateOf(playlist.volume) }
-        val volumeSliderIsBeingPressed by volumeSliderInteractionSource.collectIsPressedAsState()
-        val volumeSliderIsBeingDragged by volumeSliderInteractionSource.collectIsDraggedAsState()
+        val volumeSliderIsBeingPressed =
+            if (!lightweightContent) volumeSliderInteractionSource.collectIsPressedAsState().value
+            else false
+        val volumeSliderIsBeingDragged =
+            if (!lightweightContent) volumeSliderInteractionSource.collectIsDraggedAsState().value
+            else false
 
-        // A Box is used instead of a column so that the MarqueeText for
-        // the playlist name can partially overlap (only the part below
-        // the text baseline) with the volume slider to save space.
+        // A Box is used instead of a column so that the title text can
+        // partially overlap (only the part below the text baseline)
+        // with the volume slider to save space.
         Box(Modifier.weight(1f)) {
-            // 1dp start padding is required to make the text align with the volume icon
-            MarqueeText(text = playlist.name,
-                        style = MaterialTheme.typography.h5,
-                        modifier = Modifier
-                            .padding(start = 1.dp, top = 10.dp)
-                            .paddingFromBaseline(bottom = 48.dp))
-            VolumeSliderOrErrorMessage(
+            val titleModifier = Modifier
+                // 1dp start padding is required to make the text align with the volume icon
+                .padding(start = 1.dp, top = 10.dp)
+                .paddingFromBaseline(bottom = 48.dp)
+            Row(modifier = titleModifier, verticalAlignment = Alignment.CenterVertically) {
+                if (playlist.isSingleTrack && playlist.loopEnabled) {
+                    Icon(
+                        imageVector = Icons.Default.Loop,
+                        contentDescription = stringResource(R.string.track_loop_enabled_icon_description, playlist.name),
+                        modifier = Modifier.padding(end = 6.dp).size(18.dp),
+                        tint = MaterialTheme.colors.primaryVariant,
+                    )
+                }
+                Text(
+                    text = playlist.name,
+                    style = MaterialTheme.typography.h5,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier,
+                )
+            }
+            if (lightweightContent) LightweightVolumeSummary(
+                volume = volumeSliderValue,
+                modifier = Modifier.align(Alignment.BottomStart),
+                errorMessage = if (!playlist.hasError) null else
+                    stringResource(R.string.playlist_error_message),
+            ) else VolumeSliderOrErrorMessage(
                 volume = volumeSliderValue,
                 onVolumeChange = { volume ->
                     volumeSliderValue = volume
@@ -175,6 +205,8 @@ interface PlaylistViewCallback {
             content = when {
                 playlist.hasError ->
                     PlaylistViewEndContentType.DeleteButton
+                lightweightContent ->
+                    PlaylistViewEndContentType.MoreOptionsButton
                 volumeSliderIsBeingPressed || volumeSliderIsBeingDragged ->
                     PlaylistViewEndContentType.VolumeDisplay
                 else ->
@@ -183,9 +215,40 @@ interface PlaylistViewCallback {
             volume = volumeSliderValue,
             onRenameClick = { callback.onRenameClick(playlist) },
             onPlaylistOptionsClick = { callback.onExtraOptionsClick(playlist) },
+            onToggleLoopClick = { callback.onToggleLoopClick(playlist) },
             onVolumeBoostClick = { callback.onVolumeBoostClick(playlist) },
             onRemoveClick = { callback.onRemoveClick(playlist) },
             tint = MaterialTheme.colors.secondaryVariant)
+    }
+}
+
+@Composable private fun LightweightVolumeSummary(
+    @FloatRange(from=0.0, to=1.0)
+    volume: Float,
+    modifier: Modifier = Modifier,
+    errorMessage: String? = null,
+) = Row(
+    modifier = modifier.minTouchTargetSize(),
+    verticalAlignment = Alignment.CenterVertically,
+) {
+    if (errorMessage != null) Text(
+        text = errorMessage,
+        color = MaterialTheme.colors.error,
+        style = MaterialTheme.typography.body1,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.padding(start = 1.dp),
+    ) else {
+        Icon(imageVector = Icons.Default.VolumeUp,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = MaterialTheme.colors.primaryVariant)
+        Text(
+            text = "${(volume * 100).roundToInt()}%",
+            style = MaterialTheme.typography.subtitle2,
+            color = MaterialTheme.colors.primaryVariant,
+            modifier = Modifier.padding(start = 8.dp),
+        )
     }
 }
 
@@ -211,11 +274,8 @@ interface PlaylistViewCallback {
     contentDescription: String? = null,
     backgroundColor: Color = MaterialTheme.colors.surface,
     onAddRemoveClick: () -> Unit
-) = AnimatedContent(
-    targetState = showError,
-    label = "PlaylistView add/remove button / error icon crossfade"
 ) {
-    if (it) Icon(
+    if (showError) Icon(
         imageVector = Icons.Default.Error,
         contentDescription = contentDescription,
         modifier = Modifier.size(48.dp).padding(10.dp),
@@ -253,41 +313,35 @@ interface PlaylistViewCallback {
         remember { MutableInteractionSource() },
     errorMessage: String? = null,
     onVolumeChangeFinished: (() -> Unit)? = null,
-) = AnimatedContent(
-    targetState = errorMessage != null,
+) = Row(
     modifier = modifier.minTouchTargetSize(),
-    label = "PlaylistView error message fade in/out",
-) { hasError ->
-    // For some reason setting the contentAlignment on the AnimatedContent doesn't
-    // seem to work, so this inner box is necessary to make the error message
-    // appear vertically centered in the space where the volume slider would be
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        if (hasError) Text(
-            text = errorMessage ?: "",
-            color = MaterialTheme.colors.error,
-            style = MaterialTheme.typography.body1,
-            maxLines = 1, overflow = TextOverflow.Ellipsis,
-            // 1dp start padding is required to make the text
-            // align with where the volume icon would appear if
-            // there were no error message.
-            modifier = Modifier.padding(start = 1.dp))
-        else {
-            Icon(imageVector = Icons.Default.VolumeUp,
-                 contentDescription = null,
-                 modifier = Modifier.size(20.dp),
-                 tint = MaterialTheme.colors.primaryVariant)
-            GradientSlider(
-                value = volume,
-                onValueChange = onVolumeChange,
-                onValueChangeFinished = { onVolumeChangeFinished?.invoke() },
-                interactionSource = sliderInteractionSource,
-                colors = GradientSliderDefaults.colors(
-                    thumbColor = MaterialTheme.colors.primaryVariant,
-                    thumbColorEnd = MaterialTheme.colors.secondaryVariant,
-                    activeTrackBrush = Brush.horizontalGradient(
-                        listOf(MaterialTheme.colors.primaryVariant,
-                               MaterialTheme.colors.secondaryVariant))))
-        }
+    verticalAlignment = Alignment.CenterVertically,
+) {
+    if (errorMessage != null) Text(
+        text = errorMessage,
+        color = MaterialTheme.colors.error,
+        style = MaterialTheme.typography.body1,
+        maxLines = 1, overflow = TextOverflow.Ellipsis,
+        // 1dp start padding is required to make the text
+        // align with where the volume icon would appear if
+        // there were no error message.
+        modifier = Modifier.padding(start = 1.dp))
+    else {
+        Icon(imageVector = Icons.Default.VolumeUp,
+             contentDescription = null,
+             modifier = Modifier.size(20.dp),
+             tint = MaterialTheme.colors.primaryVariant)
+        GradientSlider(
+            value = volume,
+            onValueChange = onVolumeChange,
+            onValueChangeFinished = { onVolumeChangeFinished?.invoke() },
+            interactionSource = sliderInteractionSource,
+            colors = GradientSliderDefaults.colors(
+                thumbColor = MaterialTheme.colors.primaryVariant,
+                thumbColorEnd = MaterialTheme.colors.secondaryVariant,
+                activeTrackBrush = Brush.horizontalGradient(
+                    listOf(MaterialTheme.colors.primaryVariant,
+                           MaterialTheme.colors.secondaryVariant))))
     }
 }
 
@@ -310,8 +364,7 @@ private enum class PlaylistViewEndContentType {
  * the possible values for the [PlaylistViewEndContentType] enum.
  *
  * @param content The value of [PlaylistViewEndContentType] that describes
- *     what will be displayed. The visible content will be cross-faded
- *     between when this value changes.
+ *     what will be displayed.
  * @param playlist The [Playlist] that is being interacted with
  * @param volume The volume of the [Playlist] that is being interacted with
  * @param onRenameClick The callback that will be invoked when the
@@ -334,67 +387,78 @@ private enum class PlaylistViewEndContentType {
     volume: Float,
     onRenameClick: () -> Unit,
     onPlaylistOptionsClick: () -> Unit,
+    onToggleLoopClick: () -> Unit,
     onVolumeBoostClick: () -> Unit,
     onRemoveClick: () -> Unit,
     tint: Color = LocalContentColor.current,
-) = Crossfade(
-    targetState = content,
-    label = "PlaylistView end content crossfade"
-) { when(it) {
-    PlaylistViewEndContentType.MoreOptionsButton -> {
-        var showingOptionsMenu by rememberMutableStateOf(false)
+) {
+    when(content) {
+        PlaylistViewEndContentType.MoreOptionsButton -> {
+            var showingOptionsMenu by rememberMutableStateOf(false)
 
-        IconButton({ showingOptionsMenu = true }) {
-            Icon(imageVector = Icons.Default.MoreVert,
-                contentDescription = stringResource(
-                    R.string.item_options_button_description, playlist.name),
-                tint = tint)
-        }
-
-        DropdownMenu(
-            expanded = showingOptionsMenu,
-            onDismissRequest = { showingOptionsMenu = false }
-        ) {
-            DropdownMenuItem(onClick = {
-                showingOptionsMenu = false
-                onRenameClick()
-            }) { Text(stringResource(R.string.rename)) }
-
-            DropdownMenuItem(onClick = {
-                showingOptionsMenu = false
-                onPlaylistOptionsClick()
-            }) {
-                Text(stringResource(
-                    if (playlist.isSingleTrack) R.string.create_playlist_title
-                    else                        R.string.playlist_options_title))
+            IconButton({ showingOptionsMenu = true }) {
+                Icon(imageVector = Icons.Default.MoreVert,
+                    contentDescription = stringResource(
+                        R.string.item_options_button_description, playlist.name),
+                    tint = tint)
             }
-            DropdownMenuItem(onClick = {
-                showingOptionsMenu = false
-                onVolumeBoostClick()
-            }) { Text(stringResource(R.string.volume_boost_description)) }
 
-            DropdownMenuItem(onClick = {
-                showingOptionsMenu = false
-                onRemoveClick()
-            }) { Text(stringResource(R.string.remove)) }
+            DropdownMenu(
+                expanded = showingOptionsMenu,
+                onDismissRequest = { showingOptionsMenu = false }
+            ) {
+                DropdownMenuItem(onClick = {
+                    showingOptionsMenu = false
+                    onRenameClick()
+                }) { Text(stringResource(R.string.rename)) }
+
+                DropdownMenuItem(onClick = {
+                    showingOptionsMenu = false
+                    onPlaylistOptionsClick()
+                }) {
+                    Text(stringResource(
+                        if (playlist.isSingleTrack) R.string.create_playlist_title
+                        else                        R.string.playlist_options_title))
+                }
+                if (playlist.isSingleTrack) {
+                    DropdownMenuItem(onClick = {
+                        showingOptionsMenu = false
+                        onToggleLoopClick()
+                    }) {
+                        Text(stringResource(
+                            if (playlist.loopEnabled) R.string.turn_off_loop
+                            else R.string.turn_on_loop))
+                    }
+                }
+
+                DropdownMenuItem(onClick = {
+                    showingOptionsMenu = false
+                    onVolumeBoostClick()
+                }) { Text(stringResource(R.string.volume_boost_description)) }
+
+                DropdownMenuItem(onClick = {
+                    showingOptionsMenu = false
+                    onRemoveClick()
+                }) { Text(stringResource(R.string.remove)) }
+            }
+        }
+        PlaylistViewEndContentType.VolumeDisplay -> {
+            Box(Modifier.minTouchTargetSize(), Alignment.Center) {
+                Text(text = (volume * 100).roundToInt().toString(),
+                    color = tint,
+                    style = MaterialTheme.typography.subtitle2)
+            }
+        }
+        PlaylistViewEndContentType.DeleteButton -> {
+            IconButton(onRemoveClick) {
+                Icon(imageVector = Icons.Default.Delete,
+                    contentDescription = stringResource(
+                        R.string.remove_item_description, playlist.name),
+                    tint = MaterialTheme.colors.error)
+            }
         }
     }
-    PlaylistViewEndContentType.VolumeDisplay -> {
-        Box(Modifier.minTouchTargetSize(), Alignment.Center) {
-            Text(text = (volume * 100).roundToInt().toString(),
-                color = tint,
-                style = MaterialTheme.typography.subtitle2)
-        }
-    }
-    PlaylistViewEndContentType.DeleteButton -> {
-        IconButton(onRemoveClick) {
-            Icon(imageVector = Icons.Default.Delete,
-                contentDescription = stringResource(
-                    R.string.remove_item_description, playlist.name),
-                tint = MaterialTheme.colors.error)
-        }
-    }
-}}
+}
 
 @Preview @Composable
 fun LightTrackViewPreview() = SoundAuraTheme(darkTheme = false) {

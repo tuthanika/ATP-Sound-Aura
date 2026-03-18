@@ -123,9 +123,16 @@ sealed class LibraryState {
                 Modifier, lazyListState, contentPadding,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(items, key = Playlist::name::get) { playlist ->
-                    PlaylistView(playlist, viewState.playlistViewCallback,
-                                 Modifier.animateItem())
+                items(
+                    items = items,
+                    key = Playlist::id::get,
+                    contentType = { "playlist_item" },
+                ) { playlist ->
+                    PlaylistView(
+                        playlist = playlist,
+                        callback = viewState.playlistViewCallback,
+                        lightweightContent = lazyListState.isScrollInProgress,
+                    )
                 }
             }
         }
@@ -174,14 +181,23 @@ sealed class LibraryState {
             scope.launchIO {
                 val existingTracks = readLibrary.getPlaylistTracks(playlist.id)
                 val shuffleEnabled = readLibrary.getPlaylistShuffle(playlist.id)
+                val playSequentially = readLibrary.getPlaylistPlaySequentially(playlist.id)
                 assert((existingTracks.size == 1) == playlist.isSingleTrack)
                 withContext(Dispatcher.Immediate) {
                     if (playlist.isSingleTrack)
                         showFileChooser(playlist, existingTracks)
-                    else showPlaylistOptions(playlist, existingTracks, shuffleEnabled)
+                    else showPlaylistOptions(playlist, existingTracks, shuffleEnabled, playSequentially)
                 }
             }
         }
+        override fun onToggleLoopClick(playlist: Playlist) {
+            if (!playlist.isSingleTrack) return
+            scope.launchIO {
+                val track = readLibrary.getPlaylistTracks(playlist.id).firstOrNull() ?: return@launchIO
+                modifyLibrary.setTrackLoopEnabled(track.uri, !track.loopEnabled)
+            }
+        }
+
         override fun onVolumeBoostClick(playlist: Playlist) {
             shownDialog = PlaylistDialog.BoostVolume(
                 target = playlist,
@@ -225,6 +241,7 @@ sealed class LibraryState {
         target: Playlist,
         existingTracks: List<Track>,
         shuffleEnabled: Boolean = false,
+        playSequentially: Boolean = true,
     ) {
         shownDialog = PlaylistDialog.FileChooser(
             target, messageHandler, existingTracks,
@@ -237,10 +254,10 @@ sealed class LibraryState {
                 // gesture to go back to the playlist options dialog for that playlist.
                 if (existingTracks.size == 1)
                     dismissDialog()
-                else showPlaylistOptions(target, existingTracks, shuffleEnabled)
+                else showPlaylistOptions(target, existingTracks, shuffleEnabled, playSequentially)
             }, onChosenFilesValidated = { validatedFiles ->
                 val newTrackList = existingTracks + validatedFiles.map(::Track)
-                showPlaylistOptions(target, newTrackList, shuffleEnabled)
+                showPlaylistOptions(target, newTrackList, shuffleEnabled, playSequentially)
             })
     }
 
@@ -248,22 +265,23 @@ sealed class LibraryState {
         target: Playlist,
         existingTracks: List<Track>,
         shuffleEnabled: Boolean,
+        playSequentially: Boolean,
     ) {
         shownDialog = PlaylistDialog.PlaylistOptions(
-            target, existingTracks, shuffleEnabled, ::dismissDialog,
+            target, existingTracks, shuffleEnabled, playSequentially, ::dismissDialog,
             onAddFilesClick = {
-                showFileChooser(target, existingTracks, shuffleEnabled)
-            }, onConfirm = { newShuffle, newTracks ->
+                showFileChooser(target, existingTracks, shuffleEnabled, playSequentially)
+            }, onConfirm = { newShuffle, newPlaySequentially, newTracks ->
                 scope.launchIO {
                     val result = modifyLibrary.setPlaylistShuffleAndTracks(
-                        target.id, newShuffle, newTracks)
+                        target.id, newShuffle, newPlaySequentially, newTracks)
                     withContext(Dispatcher.Immediate) {
                         when (result) {
                             is ModifyLibraryUseCase.Result.Success ->
                                 dismissDialog()
                             is ModifyLibraryUseCase.Result.NewTracksNotAdded ->
                                 showRequestStoragePermission(
-                                    target, shuffleEnabled, newTracks, result)
+                                    target, newShuffle, newPlaySequentially, newTracks, result)
                         }
                     }
                 }
@@ -273,6 +291,7 @@ sealed class LibraryState {
     private fun showRequestStoragePermission(
         target: Playlist,
         shuffleEnabled: Boolean,
+        playSequentially: Boolean,
         existingTracks: List<Track>,
         result: ModifyLibraryUseCase.Result.NewTracksNotAdded,
     ) {
@@ -289,7 +308,7 @@ sealed class LibraryState {
                         dismissDialog()
                         if (permissionGranted) scope.launchIO {
                             modifyLibrary.setPlaylistShuffleAndTracks(
-                                target.id, shuffleEnabled,
+                                target.id, shuffleEnabled, playSequentially,
                                 existingTracks + result.unaddedUris.map(::Track))
                         } else messageHandler.postMessage(
                             stringResId = R.string.cant_add_playlist_tracks_warning,

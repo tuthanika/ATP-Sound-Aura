@@ -12,6 +12,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import androidx.room.RoomWarnings
 import androidx.room.TypeConverter
 import com.cliffracertech.soundaura.Dispatcher
 import com.cliffracertech.soundaura.R
@@ -28,7 +29,10 @@ data class Track(
     @PrimaryKey val uri: Uri,
 
     @ColumnInfo(defaultValue = "0")
-    val hasError: Boolean = false
+    val hasError: Boolean = false,
+
+    @ColumnInfo(defaultValue = "1")
+    val loopEnabled: Boolean = true,
 ) {
     class UriStringConverter {
         @TypeConverter fun fromString(string: String) = string.toUri()
@@ -50,6 +54,10 @@ data class Playlist(
     /** Whether or not shuffle is enabled for the [Playlist] */
     @ColumnInfo(defaultValue = "0")
     val shuffle: Boolean = false,
+
+    /** Whether playlist tracks should play one by one (true) or all at once (false). */
+    @ColumnInfo(defaultValue = "1")
+    val playSequentially: Boolean = true,
 
     /** Whether or not the [Playlist] is active (i.e. part of the current sound mix) */
     @ColumnInfo(defaultValue = "0")
@@ -74,6 +82,7 @@ data class Playlist(
     }
 }
 
+@SuppressWarnings(RoomWarnings.MISSING_INDEX_ON_FOREIGN_KEY_CHILD)
 @Entity(tableName = "playlistTrack",
     primaryKeys = ["playlistId", "trackUri"],
     foreignKeys = [

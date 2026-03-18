@@ -9,6 +9,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import androidx.room.RoomWarnings
 import androidx.room.Transaction
 import com.cliffracertech.soundaura.Dispatcher
 import com.cliffracertech.soundaura.R
@@ -20,6 +21,7 @@ import kotlinx.coroutines.withContext
 @Entity(tableName = "preset")
 data class Preset(@PrimaryKey val name: String)
 
+@SuppressWarnings(RoomWarnings.MISSING_INDEX_ON_FOREIGN_KEY_CHILD)
 @Entity(tableName = "presetPlaylist",
         primaryKeys = ["presetName", "playlistName"],
         foreignKeys = [

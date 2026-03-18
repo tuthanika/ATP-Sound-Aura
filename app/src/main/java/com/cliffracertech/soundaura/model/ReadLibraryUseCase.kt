@@ -32,8 +32,8 @@ private typealias PlaylistSort = com.cliffracertech.soundaura.model.database.Pla
  *
  * The property [playlistsFlow] can be used to access the library's
  * entire list of playlists, while the methods [getPlaylistTracks]
- * and [getPlaylistShuffle] can be used to obtain the list of tracks
- * or the shuffle enabled value for a given playlist.
+ * and [getPlaylistShuffle]/[getPlaylistPlaySequentially] can be used to obtain
+ * playback options for a given playlist.
  */
 class ReadLibraryUseCase @Inject constructor(
     dataStore: DataStore<Preferences>,
@@ -86,4 +86,7 @@ class ReadLibraryUseCase @Inject constructor(
      * by [playlistId] has shuffle playback enabled. */
     suspend fun getPlaylistShuffle(playlistId: Long): Boolean =
         dao.getPlaylistShuffle(playlistId)
+
+    suspend fun getPlaylistPlaySequentially(playlistId: Long): Boolean =
+        dao.getPlaylistPlaySequentially(playlistId)
 }

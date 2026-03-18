@@ -80,6 +80,7 @@ class ModifyLibraryUseCase(
     suspend fun setPlaylistShuffleAndTracks(
         playlistId: Long,
         shuffle: Boolean,
+        playSequentially: Boolean,
         tracks: List<Track>
     ): Result {
         val uris = tracks.map(Track::uri)
@@ -92,6 +93,7 @@ class ModifyLibraryUseCase(
             dao.setPlaylistShuffleAndTracks(
                 playlistId = playlistId,
                 shuffle = shuffle,
+                playSequentially = playSequentially,
                 tracks = tracks,
                 newUris = newUris,
                 removableUris = releasableUris)
@@ -100,6 +102,7 @@ class ModifyLibraryUseCase(
             dao.setPlaylistShuffleAndTracks(
                 playlistId = playlistId,
                 shuffle = shuffle,
+                playSequentially = playSequentially,
                 tracks = tracks.filter { it.uri !in newUris.toSet() },
                 newUris = emptyList(),
                 removableUris = releasableUris)
@@ -113,6 +116,10 @@ class ModifyLibraryUseCase(
     /** Set the [Playlist] identified by [playlistId]'s volume boost property
      * to [volumeBoostDb]. Values of [volumeBoostDb] will be coerced into the
      * supported range of [0, 30]. */
+    suspend fun setTrackLoopEnabled(uri: Uri, loopEnabled: Boolean) {
+        dao.setTrackLoopEnabled(uri, loopEnabled)
+    }
+
     suspend fun setPlaylistVolumeBoostDb(
         playlistId: Long,
         volumeBoostDb: Int

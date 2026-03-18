@@ -168,8 +168,8 @@ class AddButtonViewModel @Inject constructor(
                     cameFromPlaylistOrTracksQuery = false,
                     playlistName = playlistName)
             }, trackUris = uris,
-            onFinish = { shuffle, tracks ->
-                addPlaylist(playlistName, uris, shuffle, tracks)
+            onFinish = { shuffle, playSequentially, tracks ->
+                addPlaylist(playlistName, uris, shuffle, playSequentially, tracks)
             })
     }
 
@@ -227,11 +227,12 @@ class AddButtonViewModel @Inject constructor(
         playlistName: String,
         uris: List<Uri>,
         shuffle: Boolean,
+        playSequentially: Boolean,
         tracks: List<Track>,
     ) {
         scope.launch {
             when (val result = withContext(Dispatcher.IO) {
-                addToLibrary.addPlaylist(playlistName, shuffle, tracks, uris)
+                addToLibrary.addPlaylist(playlistName, shuffle, playSequentially, tracks, uris)
             }) {
                 is AddToLibraryUseCase.Result.Success ->
                     hideDialog()
@@ -242,7 +243,7 @@ class AddButtonViewModel @Inject constructor(
                         permissionsAllowed = result.permissionAllowance,
                     ) { permissionGranted ->
                         if (permissionGranted) scope.launchIO {
-                            addToLibrary.addPlaylist(playlistName, shuffle, tracks)
+                            addToLibrary.addPlaylist(playlistName, shuffle, playSequentially, tracks)
                         } else messageHandler.postMessage(
                             R.string.cant_add_playlist_warning,
                             SnackbarDuration.Long)

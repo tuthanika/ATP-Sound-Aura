@@ -28,6 +28,7 @@ import androidx.media.AudioManagerCompat
 import androidx.media.AudioManagerCompat.AUDIOFOCUS_GAIN
 import com.cliffracertech.soundaura.R
 import com.cliffracertech.soundaura.model.database.PlaylistDao
+import com.cliffracertech.soundaura.model.database.Track
 import com.cliffracertech.soundaura.preferenceFlow
 import com.cliffracertech.soundaura.repeatWhenStarted
 import com.cliffracertech.soundaura.service.PlayerService.Binder
@@ -103,11 +104,17 @@ class PlayerService: LifecycleService() {
     private var autoStopJob: Job? = null
     private var stopTime by mutableStateOf<Instant?>(null)
 
-    private val playerMap = PlayerMap(this) { problemUris ->
-        /* onPlayerCreationFailure = */lifecycleScope.launch {
-            playlistDao.setTracksHaveError(problemUris)
-        }
-    }
+    private val playerMap = PlayerMap(
+        context = this,
+        onPlaybackFailure = { problemUris ->
+            lifecycleScope.launch { playlistDao.setTracksHaveError(problemUris) }
+        },
+        onAllPlaybackComplete = {
+            lifecycleScope.launch {
+                if (isPlaying)
+                    setPlaybackState(STATE_PAUSED)
+            }
+        })
     private var playerMapIsInitialized = false
 
     private fun updateNotification() = notification.update(playbackState, stopTime)
@@ -287,7 +294,7 @@ class PlayerService: LifecycleService() {
         updateNotification()
     }
 
-    private fun updatePlayers(playlists: Map<ActivePlaylistSummary, List<Uri>>) {
+    private fun updatePlayers(playlists: Map<ActivePlaylistSummary, List<Track>>) {
         playerMap.update(playlists, isPlaying)
 
         // If the new track list is empty when isPlaying is true, we want

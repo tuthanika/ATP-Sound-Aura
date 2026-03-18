@@ -138,22 +138,27 @@ sealed class PlaylistDialog(
         target: Playlist,
         private val playlistTracks: List<Track>,
         shuffleEnabled: Boolean,
+        playSequentially: Boolean,
         onDismissRequest: () -> Unit,
         val onAddFilesClick: () -> Unit,
         private val onConfirm: (
             shuffleEnabled: Boolean,
+        playSequentially: Boolean,
             newTrackList: List<Track>,
         ) -> Unit,
     ): PlaylistDialog(target, onDismissRequest) {
         var shuffleEnabled by mutableStateOf(shuffleEnabled)
             private set
+        var playSequentially by mutableStateOf(playSequentially)
+            private set
         val onShuffleSwitchClick = { this.shuffleEnabled = !this.shuffleEnabled }
+        val onPlaybackModeSwitchClick = { this.playSequentially = !this.playSequentially }
 
         val mutablePlaylist = MutablePlaylist(playlistTracks)
 
         val onFinishClick = {
             val newList = mutablePlaylist.applyChanges()
-            onConfirm(this.shuffleEnabled, newList)
+            onConfirm(this.shuffleEnabled, this.playSequentially, newList)
         }
     }
 
@@ -287,6 +292,8 @@ sealed class PlaylistDialog(
     PlaylistOptionsView(
         shuffleEnabled = state.shuffleEnabled,
         onShuffleClick = state.onShuffleSwitchClick,
+        playSequentially = state.playSequentially,
+        onPlaybackModeClick = state.onPlaybackModeSwitchClick,
         mutablePlaylist = state.mutablePlaylist,
         onAddButtonClick = state.onAddFilesClick)
 }

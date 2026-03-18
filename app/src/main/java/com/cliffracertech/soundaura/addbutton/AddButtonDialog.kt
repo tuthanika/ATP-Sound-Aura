@@ -182,6 +182,8 @@ import com.cliffracertech.soundaura.ui.minTouchTargetSize
                         PlaylistOptionsView(
                             shuffleEnabled = state.shuffleEnabled,
                             onShuffleClick = state.onShuffleSwitchClick,
+                            playSequentially = state.playSequentially,
+                            onPlaybackModeClick = state.onPlaybackModeSwitchClick,
                             mutablePlaylist = state.mutablePlaylist,
                             onAddButtonClick = null)
                     }

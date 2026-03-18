@@ -82,6 +82,7 @@ class AddToLibraryUseCase(
     suspend fun addPlaylist(
         name: String,
         shuffle: Boolean,
+        playSequentially: Boolean,
         tracks: List<Track>,
         trackUris: List<Uri> = tracks.map(Track::uri)
     ): Result {
@@ -89,7 +90,7 @@ class AddToLibraryUseCase(
         val succeeded = permissionHandler.acquirePermissionsFor(newUris)
 
         return if (succeeded) {
-            dao.insertPlaylist(name, shuffle, tracks, newUris)
+            dao.insertPlaylist(name, shuffle, playSequentially, tracks, newUris)
             Result.Success
         } else Result.Failure(
             permissionsUsed = permissionHandler.usedAllowance,
