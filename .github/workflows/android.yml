@@ -22,19 +22,32 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    - name: Build with Gradle
-      run: ./gradlew assembleDebug
-
-    - name: Build Release APK (Fallback to Debug if no signing keys)
+    # Bước này tạo một script cấu hình Gradle tạm thời
+    # Nó sẽ ép bản release sử dụng cấu hình ký của bản debug
+    - name: Create Gradle Init Script
       run: |
-        if [ -n "${{ secrets.RELEASE_KEYSTORE_PASSWORD }}" ]; then
-          ./gradlew assembleRelease
-        else
-          echo "No release secrets found, skipping assembleRelease. Using Debug APK instead."
-        fi
+        cat <<EOF > init.gradle
+        allprojects {
+            afterEvaluate { project ->
+                if (project.hasProperty('android')) {
+                    project.android.buildTypes.all { buildType ->
+                        if (buildType.name == 'release') {
+                            // Ép bản release dùng chung key với bản debug
+                            buildType.signingConfig = project.android.signingConfigs.debug
+                        }
+                    }
+                }
+            }
+        }
+        EOF
+
+    # Build bản Release kèm theo script cấu hình vừa tạo
+    # Lệnh này giúp kích hoạt R8/ProGuard để giảm 10 lần dung lượng
+    - name: Build Optimized Release APK
+      run: ./gradlew assembleRelease --init-script init.gradle
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: app-apks
-        path: app/build/outputs/apk/**/*.apk
+        name: SoundAura-Optimized-Signed
+        path: app/build/outputs/apk/release/*.apk
