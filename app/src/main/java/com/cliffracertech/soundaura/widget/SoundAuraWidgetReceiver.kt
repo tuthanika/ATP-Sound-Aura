@@ -24,9 +24,26 @@ class SoundAuraWidgetReceiver : BroadcastReceiver() {
         val action = intent.action ?: return
         
         when (action) {
-            SoundAuraWidget.ACTION_PLAY_PAUSE,
-            SoundAuraWidget.ACTION_STOP -> {
+            SoundAuraWidget.ACTION_PLAY_PAUSE -> {
                 SoundAuraWidget.sendAction(context, action)
+            }
+            SoundAuraWidget.ACTION_STOP -> {
+                val pendingResult = goAsync()
+                scope.launch {
+                    try {
+                        val application = context.applicationContext as SoundAuraApplication
+                        application.database.playlistDao().deactivateAll()
+                        
+                        // Parar el servicio y actualizar la UI
+                        SoundAuraWidget.sendAction(context, action)
+                        withContext(Dispatchers.Main) {
+                            SoundAuraWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
+                            PresetWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
+                        }
+                    } finally {
+                        pendingResult.finish()
+                    }
+                }
             }
             SoundAuraWidget.ACTION_TOGGLE_PLAYLIST -> {
                 val playlistId = intent.getLongExtra(SoundAuraWidget.EXTRA_PLAYLIST_ID, -1)

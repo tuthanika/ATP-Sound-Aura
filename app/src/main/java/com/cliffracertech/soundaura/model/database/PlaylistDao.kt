@@ -284,6 +284,9 @@ private const val librarySelectWithFilter =
     @Query("UPDATE playlist set isActive = 1 - isActive WHERE id = :id")
     abstract suspend fun toggleIsActive(id: Long)
 
+    @Query("UPDATE playlist SET isActive = 0")
+    abstract suspend fun deactivateAll()
+
     /** Set the [Playlist.volume] field of the [Playlist] identified by [id]. */
     @Query("UPDATE playlist SET volume = :volume WHERE id = :id")
     abstract suspend fun setVolume(id: Long, volume: Float)
@@ -298,11 +301,11 @@ private const val librarySelectWithFilter =
     @Query("UPDATE track SET loopEnabled = :loopEnabled WHERE uri = :uri")
     abstract suspend fun setTrackLoopEnabled(uri: Uri, loopEnabled: Boolean)
 
-    // --- NUEVO: Método para obtener todos los tracks (para el servicio de recuperación) ---
+    // --- NUEVO: Mï¿½todo para obtener todos los tracks (para el servicio de recuperaciï¿½n) ---
     @Query("SELECT * FROM track")
     abstract suspend fun getAllTracks(): List<Track>
 
-    // --- MÉTODO PARA EL WIDGET (ya lo tenías esbozado, ahora completo) ---
+    // --- Mï¿½TODO PARA EL WIDGET (ya lo tenï¿½as esbozado, ahora completo) ---
     @Query("""
         SELECT id, name, shuffle, playSequentially, isActive,
         COUNT(playlistId) = 1 AS isSingleTrack,
