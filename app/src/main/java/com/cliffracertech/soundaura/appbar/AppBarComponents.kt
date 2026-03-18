@@ -4,6 +4,7 @@
 package com.cliffracertech.soundaura.appbar
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -39,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -57,7 +59,7 @@ fun GradientToolBar(
     val gradStart = MaterialTheme.colors.primaryVariant
     val gradEnd = MaterialTheme.colors.secondaryVariant
     val gradient = remember(gradStart, gradEnd) {
-        Brush.horizontalGradient(listOf(gradStart, gradEnd))
+        Brush.linearGradient(listOf(gradStart, gradEnd, gradStart.copy(alpha = 0.85f)))
     }
     // Side navigation bar insets need to be applied before the background
     // so that the background will not draw under the navigation bar. Side
@@ -69,8 +71,11 @@ fun GradientToolBar(
             .fillMaxWidth()
             .background(MaterialTheme.colors.background)
             .windowInsetsPadding(sideNavigationInsets)
-            .background(gradient)
             .statusBarsPadding()
+            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .shadow(8.dp, MaterialTheme.shapes.large)
+            .clip(MaterialTheme.shapes.large)
+            .background(gradient)
             .height(56.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

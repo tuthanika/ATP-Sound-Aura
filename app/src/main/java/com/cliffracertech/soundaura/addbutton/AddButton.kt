@@ -284,12 +284,18 @@ class AddButtonViewModel @Inject constructor(
         FloatingActionButton(
             onClick = viewModel.onClick,
             backgroundColor = backgroundColor,
-            elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
+            contentColor = MaterialTheme.colors.onPrimary,
+            elevation = FloatingActionButtonDefaults.elevation(
+                defaultElevation = 6.dp,
+                pressedElevation = 10.dp),
+            shape = MaterialTheme.shapes.medium
         ) {
-            Icon(imageVector = Icons.Default.Add,
+            Icon(
+                imageVector = Icons.Default.Add,
                 contentDescription = viewModel.onClickContentDescriptionResId?.let {
                     stringResource(it)
-                }, tint = MaterialTheme.colors.onPrimary)
+                }
+            )
         }
     }
 

@@ -201,7 +201,7 @@ class MainActivity : ComponentActivity() {
         }
 
         enableEdgeToEdge()
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !useDarkTheme
         SoundAuraTheme(useDarkTheme) {
             val windowSizeClass = calculateWindowSizeClass(this)
             CompositionLocalProvider(LocalWindowSizeClass provides windowSizeClass) {
@@ -245,7 +245,7 @@ class MainActivity : ComponentActivity() {
             animationSpec = tween(tweenDuration, 0, LinearOutSlowInEasing))
 
         AddButton(
-            backgroundColor = MaterialTheme.colors.secondaryVariant,
+            backgroundColor = MaterialTheme.colors.primaryVariant,
             visible = !viewModel.showingAppSettings,
             modifier = modifier.graphicsLayer {
                 translationX = addButtonXDpOffset.toPx()
