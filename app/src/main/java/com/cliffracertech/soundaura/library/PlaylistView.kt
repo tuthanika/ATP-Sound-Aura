@@ -4,6 +4,7 @@
 package com.cliffracertech.soundaura.library
 
 import androidx.annotation.FloatRange
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -158,11 +159,19 @@ interface PlaylistViewCallback {
         val volumeSliderIsBeingDragged =
             if (!lightweightContent) volumeSliderInteractionSource.collectIsDraggedAsState().value
             else false
+        var sliderVisible by rememberMutableStateOf(false)
 
         // A Box is used instead of a column so that the title text can
         // partially overlap (only the part below the text baseline)
         // with the volume slider to save space.
-        Box(Modifier.weight(1f)) {
+        val titleAndSliderBoxModifier = Modifier
+            .weight(1f)
+            .minTouchTargetSize()
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = { sliderVisible = !sliderVisible })
+        Box(titleAndSliderBoxModifier) {
             val titleModifier = Modifier
                 // 1dp start padding is required to make the text align with the volume icon
                 .padding(start = 1.dp, top = 10.dp)
@@ -184,7 +193,7 @@ interface PlaylistViewCallback {
                     modifier = Modifier,
                 )
             }
-            if (lightweightContent) LightweightVolumeSummary(
+            if (lightweightContent || !sliderVisible) LightweightVolumeSummary(
                 volume = volumeSliderValue,
                 modifier = Modifier.align(Alignment.BottomStart),
                 errorMessage = if (!playlist.hasError) null else
