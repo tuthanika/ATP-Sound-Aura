@@ -1,0 +1,53 @@
+# Archivos de compilación y binarios
+*.apk
+*.aar
+*.ap_
+*.aab
+*.dex
+*.class
+/bin/
+/gen/
+/out/
+
+# IMPORTANTÍSIMO: Ignorar carpetas de construcción y caché
+.gradle/
+build/
+app/build/
+
+# Configuración local (SDK path)
+local.properties
+
+# Archivos de logs
+*.log
+
+# Archivos de configuración de IntelliJ/Android Studio
+*.iml
+.idea/
+.navigation/
+captures/
+.externalNativeBuild
+.cxx/
+
+# Evitar archivos temporales de AndroidIDE si lo deseas
+# .androidide/
+
+# Keystores (descomentar si vas a firmar la app)
+*.jks
+*.keystore
+
+# Secretos y llaves de firma
+keystore.properties
+release.properties
+
+res-drawable.txt
+res-layouts.txt
+todo-kotlin.txt
+test.txt
+codigo.sh
+
+# Comentario de prueba post-fusióm
+
+# Android IDE
+.androidide/
+.idea/
+*.iml
