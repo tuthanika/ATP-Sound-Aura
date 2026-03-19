@@ -38,6 +38,7 @@
     <string name="playlist_error_message">Archivos faltantes/corruptos</string>
     <string name="item_options_button_description">Más opciones de %1$s</string>
     <string name="remove_item_description">Eliminar %1$s</string>
+    <string name="master_volume_label">Volumen maestro</string>
 
     <!-- Dialogs general -->
     <string name="rename">Renombrar</string>
@@ -328,5 +329,28 @@
     <string name="stop">Detener</string>
     <string name="play_pause">Reproducir/Pausar</string>
     <string name="no_active_playlists">Sin reproducción</string>
+    <string name="presets_widget_label">SoundAura Presets</string>
+    <string name="presets">Presets</string>
+    <string name="play_pause_description">Alternar Reproducir/Pausar</string>
+    <string name="stop_description">Detener reproducción</string>
+    <string name="load">Cargar</string>
+
+    <!-- Backup and Restore -->
+    <string name="backup_restore">Copia de seguridad y restauración</string>
+    <string name="backup_data">Respaldar datos</string>
+    <string name="backup_data_description">Guardar configuración, sonidos y listas en un archivo</string>
+    <string name="restore_data">Restaurar datos</string>
+    <string name="restore_data_description">Restaurar el estado de la aplicación desde un archivo</string>
+    <string name="restore_data_confirm_title">¿Confirmar restauración?</string>
+    <string name="restore_data_confirm_message">Esto sobrescribirá tu biblioteca y configuración actual. ¿Estás seguro?</string>
+    <string name="backup_success">Copia de seguridad guardada con éxito</string>
+    <string name="backup_error">Error durante el respaldo: %1$s</string>
+    <string name="restore_success">Datos restaurados con éxito</string>
+    <string name="restore_error">Error durante la restauración: %1$s</string>
+    <string name="invalid_backup_file_error">Archivo de respaldo no válido</string>
+    <string name="relink_sounds">Re-vincular sonidos</string>
+    <string name="relink_sounds_description">Selecciona la carpeta donde están tus sonidos para corregir errores de ruta.</string>
+    <string name="relink_success">¡Se han re-vinculado con éxito %1$d sonidos!</string>
+    <string name="relink_no_matches">No se found sonidos coincidentes en la carpeta seleccionada.</string>
     
 </resources>

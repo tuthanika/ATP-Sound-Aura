@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This file is part of SoundAura, which is released under
+   ~ the terms of the Apache License 2.0. See license.md in
+   ~ the project's root directory to see the full license. -->
+
+<resources>
+    <string name="new_version_dialog_title">Versión %1$s</string>
+    <string name="bug_fixes_section_title">Corrección de errores</string>
+
+    <string name="feature_playlists_title">Soporte para listas de reproducción añadido</string>
+    <string name="feature_playlists_description">
+        Selecciona múltiples archivos a la vez al añadir nuevas pistas, o elige la opción
+        ‘%1$s’ del menú de una pista y selecciona al menos una pista adicional
+        para crear một danh sách phát (playlist).</string>
+
+    <string name="feature_volume_boost_title">Aumento de volumen añadido</string>
+    <string name="feature_volume_boost_description">
+        Elige la opción ‘%1$s’ del menú de una pista o lista para
+        aumentar el volumen hasta 30dB sin alterar el archivo original.</string>
+
+    <string name="version_1_6_change_storage_permission_title">Límite de pistas excedido</string>
+    <string name="version_1_6_change_storage_permission_explanation">Si excedes el número normal de pistas permitidas, concede el permiso de lectura de almacenamiento để ứng dụng có thể thêm không giới hạn số lượng bản nhạc.</string>
+    <string name="version_1_6_change_bug_fixes_description">Se corrigió el cierre inesperado al exceder el límite de pistas.\nSe corrigió el error en el que el botón de ajustes rápidos no se actualizaba.</string>
+
+    <string name="version_1_6_2_change_crash_on_adding_media_fix">Se corrigió (esperamos) el cierre inesperado al añadir archivos que algunos usuarios experimentaban.</string>
+</resources>
