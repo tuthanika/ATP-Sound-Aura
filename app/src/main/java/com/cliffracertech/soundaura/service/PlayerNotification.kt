@@ -90,6 +90,8 @@ class PlayerNotification(
     private var timeUntilStop: Duration? =
         stopTime?.let { Duration.between(Instant.now(), it) }
 
+    private var backgroundBitmap: android.graphics.Bitmap? = null
+
     private var mediaSession: MediaSessionCompat? = null
     var useMediaSession: Boolean = useMediaSession
         set(value) {
@@ -190,15 +192,13 @@ class PlayerNotification(
                 // for the media controls card. For pre-API 33 media controls
                 // we use the standard app icon because it is displayed in a
                 // box at the starting edge of the media controls .
-                val background = ContextCompat.getDrawable(
+                backgroundBitmap = ContextCompat.getDrawable(
                         service,
                         if (usingTiramisuMediaControls)
                             R.drawable.media_controls_background
                         else R.drawable.ic_launcher_foreground
                     )?.toBitmap()
-                setMetadata(MediaMetadataCompat.Builder()
-                    .putBitmap(METADATA_KEY_ART, background)
-                    .build())
+                setMetadata(updatedMetadata(playbackState))
                 isActive = true
                 notificationStyle.setMediaSession(sessionToken)
                 setCallback(object: MediaSessionCompat.Callback() {
@@ -238,6 +238,7 @@ class PlayerNotification(
         val notification = updatedNotification(playbackState, timeUntilStop)
         notificationManager.notify(notificationId, notification)
         mediaSession?.setPlaybackState(updatedPlaybackState(playbackState))
+        mediaSession?.setMetadata(updatedMetadata(playbackState))
     }
 
     private fun NotificationCompat.Builder.updateText(
@@ -288,4 +289,17 @@ class PlayerNotification(
         .setActions(ACTION_PLAY_PAUSE or ACTION_PLAY or
                     ACTION_PAUSE or ACTION_STOP)
         .build()
+
+    private fun updatedMetadata(playbackState: Int): MediaMetadataCompat {
+        val stateString = service.getString(when(playbackState) {
+            STATE_PLAYING -> R.string.playing
+            STATE_PAUSED ->  R.string.paused
+            else ->          R.string.stopped
+        })
+        return MediaMetadataCompat.Builder()
+            .putBitmap(METADATA_KEY_ART, backgroundBitmap)
+            .putString(METADATA_KEY_TITLE, service.getString(R.string.app_name))
+            .putString(METADATA_KEY_ARTIST, stateString)
+            .build()
+    }
 }
