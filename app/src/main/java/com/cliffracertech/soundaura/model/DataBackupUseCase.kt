@@ -208,11 +208,12 @@ class DataBackupUseCase @Inject constructor(
         relinkCount
     }
 
-    private fun listFilesRecursive(directory: DocumentFile): List<DocumentFile> {
+    private fun listFilesRecursive(directory: DocumentFile, depth: Int = 0): List<DocumentFile> {
+        if (depth > 5) return emptyList()
         val files = mutableListOf<DocumentFile>()
         directory.listFiles().forEach { file ->
             if (file.isDirectory) {
-                files.addAll(listFilesRecursive(file))
+                files.addAll(listFilesRecursive(file, depth + 1))
             } else if (file.name != null) {
                 files.add(file)
             }
