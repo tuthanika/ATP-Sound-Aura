@@ -93,8 +93,8 @@ class AndroidUriPermissionHandler @Inject constructor(
         context.contentResolver.persistedUriPermissions.size
 
     override fun acquirePermissionsFor(uris: List<Uri>): Boolean {
-        // --- SOLUCIÓN: Siempre intentar permisos persistentes si hay espacio ---
-        // 1. Verificar si tenemos espacio en el límite de permisos persistentes
+        // 1. Try to obtain persistent permissions if there is space
+        // Check if we have space in the persistent permission limit
         if (remainingAllowance >= uris.size) {
             var successfulGrants = 0
             for (uri in uris) {
@@ -104,31 +104,31 @@ class AndroidUriPermissionHandler @Inject constructor(
                 } catch (e: SecurityException) {
                     logd("Attempted to obtain a persistable permission for " +
                          "$uri when no persistable permission was granted.")
-                    // Si falla para una URI, liberamos las que sí se concedieron
-                    // para no dejar el sistema en un estado inconsistente.
+                    // If it fails for one URI, we release the ones that were granted
+                    // to not leave the system in an inconsistent state.
                     if (successfulGrants > 0) {
                         releasePermissionsFor(uris.subList(0, successfulGrants))
                     }
-                    // Salimos del bucle y procedemos a la lógica de respaldo
+                    // Exit the loop and proceed to fallback logic
                     break
                 }
             }
 
-            // Si logramos obtener permisos persistentes para todos, ¡éxito!
+            // If we managed to obtain persistent permissions for all, success!
             if (successfulGrants == uris.size) {
                 return true
             }
         }
 
-        // 2. Si no hay espacio (superamos el límite) o falló obtener permisos persistentes,
-        // caemos en usar el permiso de almacenamiento general como respaldo.
-        // Nota: Este es un respaldo, no la primera opción.
+        // 2. If there is no space (limit exceeded) or failed to obtain persistent permissions,
+        // we fall back to using the general storage permission as a backup.
+        // Note: This is a fallback, not the first option.
         if (hasStoragePermission) {
             logd("Falling back to general storage permission for ${uris.size} URIs.")
             return true
         }
 
-        // 3. Si no tenemos permisos persistentes ni permisos generales, la operación falla.
+        // 3. If we don't have persistent permissions nor general permissions, the operation fails.
         return false
     }
 

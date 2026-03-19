@@ -20,15 +20,15 @@ class RemoteViewsFactory(
     private lateinit var playlistDao: PlaylistDao
 
     override fun onCreate() {
-        // Obtener el PlaylistDao desde la aplicación
+        // Get PlaylistDao from the application
         val application = context.applicationContext as SoundAuraApplication
         playlistDao = application.database.playlistDao()
     }
 
     override fun onDataSetChanged() {
-        // Obtener la lista de playlists de la base de datos
+        // Get the list of playlists from the database
         runBlocking {
-            // Usar el método que devuelve una lista de LibraryPlaylist
+            // Use the method that returns a list of LibraryPlaylist
             playlists = playlistDao.getPlaylistsForWidget()
         }
     }
@@ -43,11 +43,11 @@ class RemoteViewsFactory(
         val playlist = playlists[position]
         val views = RemoteViews(context.packageName, R.layout.widget_playlist_item)
 
-        // Configurar el nombre de la playlist con un check si está activa
+        // Set the playlist name with a checkmark if active
         val displayName = if (playlist.isActive) "✓ ${playlist.name}" else playlist.name
         views.setTextViewText(R.id.widget_playlist_name, displayName)
 
-        // Configurar el fondo para el item activo
+        // Set background for the active item
         if (playlist.isActive) {
             views.setInt(R.id.widget_playlist_item_container, "setBackgroundResource", R.drawable.widget_playlist_item_bg)
             views.setInt(R.id.widget_playlist_item_container, "setBackgroundColor", context.getColor(R.color.widget_active_item_bg))
@@ -55,19 +55,19 @@ class RemoteViewsFactory(
             views.setInt(R.id.widget_playlist_item_container, "setBackgroundResource", 0)
         }
 
-        // Configurar el botón +/-
+        // Set button +/- icon
         val buttonIcon = if (playlist.isActive) R.drawable.ic_baseline_remove_24
                          else R.drawable.ic_baseline_add_24
         views.setImageViewResource(R.id.widget_playlist_button, buttonIcon)
 
-        // Configurar el content description
+        // Set content description
         val buttonDesc = if (playlist.isActive) 
             context.getString(R.string.set_playlist_inactive_description, playlist.name)
         else
             context.getString(R.string.set_playlist_active_description, playlist.name)
         views.setContentDescription(R.id.widget_playlist_button, buttonDesc)
 
-        // Configurar el intent para cuando se haga clic en el botón
+        // Set intent for when the button is clicked
         val fillInIntent = Intent().apply {
             action = SoundAuraWidget.ACTION_TOGGLE_PLAYLIST
             putExtra(SoundAuraWidget.EXTRA_PLAYLIST_ID, playlist.id)

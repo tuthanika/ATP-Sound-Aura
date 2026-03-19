@@ -29,7 +29,7 @@ class SoundAuraApplication : android.app.Application() {
                     this, ComponentName(this, TogglePlaybackTileService::class.java))
         }
 
-        // --- NUEVO: Iniciar el servicio de recuperación al arrancar la app ---
+        // --- Start the recovery service on app startup ---
         // Esto intentará adquirir permisos persistentes para todos los tracks existentes.
         val recoveryIntent = Intent(this, PlaylistRecoveryService::class.java)
         startService(recoveryIntent)

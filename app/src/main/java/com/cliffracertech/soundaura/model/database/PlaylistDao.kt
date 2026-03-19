@@ -345,7 +345,7 @@ private const val librarySelectWithFilter =
             deleteTrack(oldUri)
     }
 
-    // --- MTODO PARA EL WIDGET (ya lo tenas esbozado, ahora completo) ---
+    // --- METHOD FOR THE WIDGET ---
     @Query("""
         SELECT id, name, shuffle, playSequentially, isActive,
         COUNT(playlistId) = 1 AS isSingleTrack,

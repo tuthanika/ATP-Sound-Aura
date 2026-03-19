@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This file is part of SoundAura, which is released under
+   ~ the terms of the Apache License 2.0. See license.md in
+   ~ the project's root directory to see the full license. -->
+
+<resources>
+    <string name="new_version_dialog_title">Phiên bản %1$s</string>
+    <string name="bug_fixes_section_title">Sửa lỗi</string>
+
+    <string name="feature_playlists_title">Đã thêm hỗ trợ playlist</string>
+    <string name="feature_playlists_description">
+        Chọn nhiều tệp cùng lúc khi thêm bản nhạc mới, hoặc chọn tùy chọn
+        ‘%1$s’ từ menu của bản nhạc và chọn ít nhất một bản nhạc bổ sung
+        để tạo danh sách phát (playlist).</string>
+
+    <string name="feature_volume_boost_title">Đã thêm tăng cường âm lượng</string>
+    <string name="feature_volume_boost_description">
+        Chọn tùy chọn ‘%1$s’ từ menu của bản nhạc hoặc danh sách phát để
+        tăng âm lượng lên đến 30dB mà không làm thay đổi tệp gốc.</string>
+
+    <string name="version_1_6_change_storage_permission_title">Vượt quá giới hạn bản nhạc</string>
+    <string name="version_1_6_change_storage_permission_explanation">Nếu vượt quá số lượng bản nhạc thông thường cho phép, hãy cấp quyền đọc bộ nhớ để ứng dụng có thể thêm không giới hạn số lượng bản nhạc.</string>
+    <string name="version_1_6_change_bug_fixes_description">Sửa lỗi văng ứng dụng khi vượt quá số lượng bản nhạc tối đa cho phép.\nSửa lỗi tile cài đặt nhanh không cập nhật trạng thái.</string>
+
+    <string name="version_1_6_2_change_crash_on_adding_media_fix">Đã sửa (hy vọng vậy) lỗi văng ứng dụng khi thêm phương tiện mà một số người dùng gặp phải.</string>
+</resources>
