@@ -29,6 +29,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.cliffracertech.soundaura.R
 import com.cliffracertech.soundaura.addbutton.SystemFileChooser
+import com.cliffracertech.soundaura.addbutton.SystemSingleFileChooser
+import com.cliffracertech.soundaura.addbutton.SystemFolderChooser
 import com.cliffracertech.soundaura.dialog.DialogWidth
 import com.cliffracertech.soundaura.dialog.NamingDialog
 import com.cliffracertech.soundaura.dialog.NamingState
@@ -36,6 +38,8 @@ import com.cliffracertech.soundaura.dialog.SoundAuraDialog
 import com.cliffracertech.soundaura.dialog.ValidatedNamingState
 import com.cliffracertech.soundaura.library.PlaylistDialog.FileChooser
 import com.cliffracertech.soundaura.library.PlaylistDialog.PlaylistOptions
+import com.cliffracertech.soundaura.library.PlaylistDialog.PickFolder
+import com.cliffracertech.soundaura.library.PlaylistDialog.PickSingleFile
 import com.cliffracertech.soundaura.library.PlaylistDialog.Remove
 import com.cliffracertech.soundaura.library.PlaylistDialog.Rename
 import com.cliffracertech.soundaura.model.MessageHandler
@@ -141,9 +145,10 @@ sealed class PlaylistDialog(
         playSequentially: Boolean,
         onDismissRequest: () -> Unit,
         val onAddFilesClick: () -> Unit,
+        val onTrackChangePathClick: (Uri) -> Unit,
         private val onConfirm: (
             shuffleEnabled: Boolean,
-        playSequentially: Boolean,
+            playSequentially: Boolean,
             newTrackList: List<Track>,
         ) -> Unit,
     ): PlaylistDialog(target, onDismissRequest) {
@@ -227,6 +232,23 @@ sealed class PlaylistDialog(
         onDismissRequest: () -> Unit,
         val onConfirmClick: () -> Unit,
     ): PlaylistDialog(target, onDismissRequest)
+
+    /** A file chooser that allows the user to pick a new [Uri] for the
+     * track in [target] that is identified by [trackUri]. */
+    class PickSingleFile(
+        target: Playlist,
+        val trackUri: Uri,
+        onDismissRequest: () -> Unit,
+        val onFileChosen: (Uri) -> Unit,
+    ): PlaylistDialog(target, onDismissRequest)
+
+    /** A folder chooser that allows the user to pick a new [Uri] folder
+     * for all of the tracks in [target]. */
+    class PickFolder(
+        target: Playlist,
+        onDismissRequest: () -> Unit,
+        val onFolderChosen: (Uri) -> Unit,
+    ): PlaylistDialog(target, onDismissRequest)
 }
 
 /** Display the appropriate [Playlist]-related dialog, as identified by [dialogState]. */
@@ -257,6 +279,14 @@ sealed class PlaylistDialog(
         isSingleTrack = dialogState.target.isSingleTrack,
         onDismissRequest = dialogState.onDismissRequest,
         onConfirmClick = dialogState.onConfirmClick)
+    is PickSingleFile -> SystemSingleFileChooser {
+        dialogState.onFileChosen(it)
+        dialogState.onDismissRequest()
+    }
+    is PickFolder -> SystemFolderChooser {
+        dialogState.onFolderChosen(it)
+        dialogState.onDismissRequest()
+    }
 }
 
 /**
@@ -295,7 +325,8 @@ sealed class PlaylistDialog(
         playSequentially = state.playSequentially,
         onPlaybackModeClick = state.onPlaybackModeSwitchClick,
         mutablePlaylist = state.mutablePlaylist,
-        onAddButtonClick = state.onAddFilesClick)
+        onAddButtonClick = state.onAddFilesClick,
+        onChangePathClick = state.onTrackChangePathClick)
 }
 
 /** Show a dialog explaining why the read storage permission is needed. */

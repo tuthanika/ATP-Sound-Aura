@@ -93,6 +93,26 @@ import com.cliffracertech.soundaura.ui.minTouchTargetSize
     LaunchedEffect(Unit) { launcher.launch(fileTypeArgs) }
 }
 
+/** Show a system file picker to allow the user to pick a single file. */
+@Composable fun SystemSingleFileChooser(
+    onFileSelected: (Uri) -> Unit,
+) {
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { it?.let(onFileSelected) })
+    LaunchedEffect(Unit) { launcher.launch(arrayOf("audio/*", "application/ogg")) }
+}
+
+/** Show a system folder picker to allow the user to pick a folder. */
+@Composable fun SystemFolderChooser(
+    onFolderSelected: (Uri) -> Unit,
+) {
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree(),
+        onResult = { it?.let(onFolderSelected) })
+    LaunchedEffect(Unit) { launcher.launch(null) }
+}
+
 @Composable private fun AccessAudioFilesPermissionRequester(onPermissionGranted: (Boolean) -> Unit) {
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),

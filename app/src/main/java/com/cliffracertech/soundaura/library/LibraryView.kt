@@ -3,6 +3,7 @@
  * the project's root directory to see the full license. */
 package com.cliffracertech.soundaura.library
 
+import android.net.Uri
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
@@ -149,11 +150,14 @@ sealed class LibraryState {
  * [shownDialog].
  */
 @HiltViewModel class LibraryViewModel @Inject constructor(
-    readLibrary: ReadLibraryUseCase,
-    private val modifyLibrary: ModifyLibraryUseCase,
-    private val searchQueryState: SearchQueryState,
-    private val messageHandler: MessageHandler,
-    playbackState: PlaybackState,
+    @dagger.hilt.android.qualifiers.ApplicationContext
+    private val context: android.content.Context,
+    private val readLibrary: com.cliffracertech.soundaura.model.ReadLibraryUseCase,
+    private val modifyLibrary: com.cliffracertech.soundaura.model.ModifyLibraryUseCase,
+    private val uriPermissionHandler: com.cliffracertech.soundaura.model.UriPermissionHandler,
+    private val searchQueryState: com.cliffracertech.soundaura.model.SearchQueryState,
+    private val messageHandler: com.cliffracertech.soundaura.model.MessageHandler,
+    playbackState: com.cliffracertech.soundaura.model.PlaybackState,
 ) : ViewModel() {
     private val scope = viewModelScope + Dispatcher.Immediate
 
@@ -197,7 +201,21 @@ sealed class LibraryState {
                 modifyLibrary.setTrackLoopEnabled(track.uri, !track.loopEnabled)
             }
         }
-
+        override fun onChangePathClick(playlist: Playlist) {
+            if (!playlist.isSingleTrack) return
+            scope.launchIO {
+                val track = readLibrary.getPlaylistTracks(playlist.id).firstOrNull() ?: return@launchIO
+                withContext(Dispatcher.Immediate) {
+                    showPickSingleFileDialog(playlist, track.uri)
+                }
+            }
+        }
+        override fun onFolderPathChangeClick(playlist: Playlist) {
+            showPickFolderDialog(playlist)
+        }
+        override fun onTrackChangePathClick(playlist: Playlist, trackUri: android.net.Uri) {
+            showPickSingleFileDialog(playlist, trackUri)
+        }
         override fun onVolumeBoostClick(playlist: Playlist) {
             shownDialog = PlaylistDialog.BoostVolume(
                 target = playlist,
@@ -271,6 +289,8 @@ sealed class LibraryState {
             target, existingTracks, shuffleEnabled, playSequentially, ::dismissDialog,
             onAddFilesClick = {
                 showFileChooser(target, existingTracks, shuffleEnabled, playSequentially)
+            }, onTrackChangePathClick = { trackUri ->
+                showPickSingleFileDialog(target, trackUri)
             }, onConfirm = { newShuffle, newPlaySequentially, newTracks ->
                 scope.launchIO {
                     val result = modifyLibrary.setPlaylistShuffleAndTracks(
@@ -314,6 +334,46 @@ sealed class LibraryState {
                             stringResId = R.string.cant_add_playlist_tracks_warning,
                             duration = SnackbarDuration.Long)
                     })
+            })
+    }
+
+    private fun showPickSingleFileDialog(target: Playlist, trackUri: android.net.Uri) {
+        shownDialog = PlaylistDialog.PickSingleFile(
+            target = target,
+            trackUri = trackUri,
+            onDismissRequest = ::dismissDialog,
+            onFileChosen = { newUri ->
+                scope.launchIO {
+                    modifyLibrary.updateTrackUri(trackUri, newUri)
+                }
+            })
+    }
+
+    private fun showPickFolderDialog(target: Playlist) {
+        shownDialog = PlaylistDialog.PickFolder(
+            target = target,
+            onDismissRequest = ::dismissDialog,
+            onFolderChosen = { newFolderUri ->
+                scope.launchIO {
+                    uriPermissionHandler.acquirePermissionsFor(listOf(newFolderUri))
+                    val tracks: List<com.cliffracertech.soundaura.model.database.Track> =
+                        readLibrary.getPlaylistTracks(target.id)
+                    val newFolder = androidx.documentfile.provider.DocumentFile.fromTreeUri(context, newFolderUri) ?: return@launchIO
+                    val newFolderFiles = newFolder.listFiles()
+
+                    for (track in tracks) {
+                        val file = androidx.documentfile.provider.DocumentFile.fromSingleUri(context, track.uri)
+                        val oldName = (file?.name ?: track.uri.lastPathSegment ?: continue)
+                            .substringAfterLast('/')
+                            .substringAfterLast(':')
+                        val matchingNewFile = newFolderFiles.find { 
+                            it.name?.substringAfterLast('/')?.substringAfterLast(':') == oldName 
+                        }
+                        if (matchingNewFile != null) {
+                            modifyLibrary.updateTrackUri(track.uri, matchingNewFile.uri)
+                        }
+                    }
+                }
             })
     }
 }

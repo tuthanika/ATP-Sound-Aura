@@ -132,4 +132,14 @@ class ModifyLibraryUseCase(
         val unusedTracks = dao.deletePlaylist(id)
         permissionHandler.releasePermissionsFor(unusedTracks)
     }
+
+    suspend fun updateTrackUri(oldUri: Uri, newUri: Uri): Boolean {
+        if (oldUri == newUri) return true
+        // We attempt to acquire permission, but don't fail if it's not possible
+        // (e.g. if the URI is a child of a tree URI we already have permission for).
+        permissionHandler.acquirePermissionsFor(listOf(newUri))
+        dao.updateTrackUri(oldUri, newUri)
+        permissionHandler.releasePermissionsFor(listOf(oldUri))
+        return true
+    }
 }

@@ -3,6 +3,7 @@
  * the project's root directory to see the full license. */
 package com.cliffracertech.soundaura.library
 
+import android.net.Uri
 import androidx.annotation.FloatRange
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -94,6 +95,15 @@ interface PlaylistViewCallback {
     /** The callback that will be invoked when the 'volume boost'
      * option in the playlist's options menu is clicked */
     fun onVolumeBoostClick(playlist: Playlist)
+    /** The callback that will be invoked when the 'change path'
+     * option in the playlist's options menu is clicked */
+    fun onChangePathClick(playlist: Playlist)
+    /** The callback that will be invoked when the 'change folder path'
+     * option in the playlist's options menu is clicked */
+    fun onFolderPathChangeClick(playlist: Playlist)
+    /** The callback that will be invoked when a track's 'change path'
+     * button is clicked */
+    fun onTrackChangePathClick(playlist: Playlist, trackUri: Uri)
     /** The callback that will be invoked when the 'remove'
      * option of the playlist's options menu is clicked */
     fun onRemoveClick(playlist: Playlist)
@@ -108,6 +118,9 @@ interface PlaylistViewCallback {
     onExtraOptionsClick: (Playlist) -> Unit = {},
     onToggleLoopClick: (Playlist) -> Unit = {},
     onVolumeBoostClick: (Playlist) -> Unit = {},
+    onChangePathClick: (Playlist) -> Unit = {},
+    onFolderPathChangeClick: (Playlist) -> Unit = {},
+    onTrackChangePathClick: (Playlist, Uri) -> Unit = { _, _ -> },
     onRemoveClick: (Playlist) -> Unit = {}
 ) = remember { object: PlaylistViewCallback {
     override fun onAddRemoveButtonClick(playlist: Playlist) = onAddRemoveButtonClick(playlist)
@@ -117,6 +130,9 @@ interface PlaylistViewCallback {
     override fun onExtraOptionsClick(playlist: Playlist) = onExtraOptionsClick(playlist)
     override fun onToggleLoopClick(playlist: Playlist) = onToggleLoopClick(playlist)
     override fun onVolumeBoostClick(playlist: Playlist) = onVolumeBoostClick(playlist)
+    override fun onChangePathClick(playlist: Playlist) = onChangePathClick(playlist)
+    override fun onFolderPathChangeClick(playlist: Playlist) = onFolderPathChangeClick(playlist)
+    override fun onTrackChangePathClick(playlist: Playlist, trackUri: Uri) = onTrackChangePathClick(playlist, trackUri)
     override fun onRemoveClick(playlist: Playlist) = onRemoveClick(playlist)
 }}
 
@@ -212,9 +228,7 @@ interface PlaylistViewCallback {
         }
         PlaylistViewEndContent(
             content = when {
-                playlist.hasError ->
-                    PlaylistViewEndContentType.DeleteButton
-                lightweightContent ->
+                playlist.hasError || lightweightContent ->
                     PlaylistViewEndContentType.MoreOptionsButton
                 volumeSliderIsBeingPressed || volumeSliderIsBeingDragged ->
                     PlaylistViewEndContentType.VolumeDisplay
@@ -226,6 +240,8 @@ interface PlaylistViewCallback {
             onPlaylistOptionsClick = { callback.onExtraOptionsClick(playlist) },
             onToggleLoopClick = { callback.onToggleLoopClick(playlist) },
             onVolumeBoostClick = { callback.onVolumeBoostClick(playlist) },
+            onChangePathClick = { callback.onChangePathClick(playlist) },
+            onFolderPathChangeClick = { callback.onFolderPathChangeClick(playlist) },
             onRemoveClick = { callback.onRemoveClick(playlist) },
             tint = MaterialTheme.colors.secondaryVariant)
     }
@@ -398,6 +414,8 @@ private enum class PlaylistViewEndContentType {
     onPlaylistOptionsClick: () -> Unit,
     onToggleLoopClick: () -> Unit,
     onVolumeBoostClick: () -> Unit,
+    onChangePathClick: () -> Unit,
+    onFolderPathChangeClick: () -> Unit,
     onRemoveClick: () -> Unit,
     tint: Color = LocalContentColor.current,
 ) {
@@ -444,6 +462,17 @@ private enum class PlaylistViewEndContentType {
                     showingOptionsMenu = false
                     onVolumeBoostClick()
                 }) { Text(stringResource(R.string.volume_boost_description)) }
+
+                DropdownMenuItem(onClick = {
+                    showingOptionsMenu = false
+                    if (playlist.isSingleTrack)
+                        onChangePathClick()
+                    else onFolderPathChangeClick()
+                }) {
+                    Text(stringResource(
+                        if (playlist.isSingleTrack) R.string.change_path
+                        else                        R.string.change_folder_path))
+                }
 
                 DropdownMenuItem(onClick = {
                     showingOptionsMenu = false

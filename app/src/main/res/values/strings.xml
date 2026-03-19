@@ -102,6 +102,9 @@ Tap the plus symbol next to an added track or playlist to
         Choose at least one file that is not already in the playlist</string>
     <string name="file_chooser_invalid_tracks_warning_message">
         %1$d of the files were already in the playlist</string>
+    <string name="change_path">Change path</string>
+    <string name="change_folder_path">Change folder path</string>
+    <string name="change_path_description">Change path for %1$s</string>
 
     <!-- Storage permission -->
     <string name="playlist_options_request_storage_permission_explanation">

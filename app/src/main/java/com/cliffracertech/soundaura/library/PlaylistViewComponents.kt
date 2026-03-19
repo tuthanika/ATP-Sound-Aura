@@ -3,6 +3,7 @@
  * the project's root directory to see the full license. */
 package com.cliffracertech.soundaura.library
 
+import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.AnimationConstants.DefaultDurationMillis
@@ -42,8 +43,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Loop
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Undo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -226,6 +229,7 @@ class MutablePlaylist(tracks: List<Track>) {
     onPlaybackModeClick: () -> Unit,
     mutablePlaylist: MutablePlaylist,
     onAddButtonClick: (() -> Unit)? = null,
+    onChangePathClick: (Uri) -> Unit = {},
 ) {
     HorizontalDivider(Modifier.padding(horizontal = 8.dp))
     Row(modifier = Modifier.fillMaxWidth().height(56.dp)) {
@@ -248,7 +252,8 @@ class MutablePlaylist(tracks: List<Track>) {
     PlaylistOptionsTrackList(
         modifier = Modifier.heightIn(max = maxHeight),
         mutablePlaylist = mutablePlaylist,
-        allowDeletion = onAddButtonClick != null)
+        allowDeletion = onAddButtonClick != null,
+        onChangePathClick = onChangePathClick)
 }
 
 @Composable private fun RowScope.PlaylistOptionsTrackCount(
@@ -331,6 +336,7 @@ class MutablePlaylist(tracks: List<Track>) {
     modifier: Modifier = Modifier,
     mutablePlaylist: MutablePlaylist,
     allowDeletion: Boolean,
+    onChangePathClick: (Uri) -> Unit,
 ) {
     val lazyListState = rememberLazyListState()
     val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
@@ -356,43 +362,46 @@ class MutablePlaylist(tracks: List<Track>) {
                         .fillMaxWidth()
                         .height(48.dp)
                         .shadow(elevation, shape)
-                        .background(color, shape),
+                        .background(color, shape)
+                        .longPressDraggableHandle(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Uri.lastPathSegment seems to not work with some Uris for some reason
-                    val name = DocumentFile.fromSingleUri(
-                            LocalContext.current, track.uri
-                        )!!.name.orEmpty()
-                    Icon(imageVector = if (track.hasError) Icons.Default.Error
-                                       else                Icons.Default.DragHandle,
-                        contentDescription = stringResource(
-                            R.string.playlist_track_handle_description, name),
-                        modifier = Modifier
-                            .minTouchTargetSize()
-                            .draggableHandle()
-                            .padding(10.dp),
-                        tint = if (track.hasError) MaterialTheme.colors.error
-                               else                LocalContentColor.current)
+                    val context = LocalContext.current
+                    val name = remember(track.uri) {
+                        DocumentFile.fromSingleUri(context, track.uri)?.name
+                            ?: track.uri.lastPathSegment ?: ""
+                    }
+                    SimpleIconButton(
+                        icon = Icons.Default.MoreVert,
+                        contentDescription = stringResource(R.string.change_path_description, name),
+                        iconPadding = 12.dp,
+                        onClick = { onChangePathClick(track.uri) })
 
-                    val errorMessage = if (!track.hasError) "" else
-                        stringResource(R.string.playlist_track_error_message) + " "
-                    MarqueeText("$errorMessage…${File.separatorChar}$name",
-                                Modifier.weight(1f))
+                    MarqueeText("…${File.separatorChar}$name", Modifier.weight(1f))
+
+                    if (track.hasError)
+                        Icon(imageVector = Icons.Default.Error,
+                            contentDescription = stringResource(R.string.playlist_track_error_message),
+                            modifier = Modifier.padding(horizontal = 4.dp).size(20.dp),
+                            tint = MaterialTheme.colors.error)
 
                     if (!allowDeletion) Spacer(Modifier.width(16.dp))
                     else {
                         SimpleIconButton(
                             icon = Icons.Default.Loop,
                             contentDescription = stringResource(R.string.playlist_track_loop_description, name),
-                            iconPadding = 10.dp,
+                            iconPadding = 11.dp,
+                            modifier = Modifier.size(40.dp),
                             tint = if (track.loopEnabled) MaterialTheme.colors.primaryVariant else LocalContentColor.current.copy(alpha = 0.45f),
                             onClick = { mutablePlaylist.toggleTrackLoop(index) })
                         SimpleIconButton(
                             icon = if (markedForRemoval) Icons.Default.Undo else Icons.Default.Delete,
                             contentDescription = stringResource(
                                 R.string.playlist_track_delete_description, name),
-                            iconPadding = if (markedForRemoval) 11.dp else 13.dp,
+                            iconPadding = if (markedForRemoval) 12.dp else 14.dp,
+                            modifier = Modifier.size(40.dp),
                             onClick = { mutablePlaylist.toggleTrackRemoval(index) })
+                        Spacer(Modifier.width(4.dp))
                     }
                 }
             }

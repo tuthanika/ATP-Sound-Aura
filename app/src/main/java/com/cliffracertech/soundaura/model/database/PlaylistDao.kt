@@ -298,8 +298,38 @@ private const val librarySelectWithFilter =
     @Query("UPDATE track SET hasError = 1 WHERE uri in (:uris)")
     abstract suspend fun setTracksHaveError(uris: List<Uri>)
 
+    @Query("UPDATE track SET hasError = :hasError WHERE uri = :uri")
+    abstract suspend fun setTrackHasError(uri: Uri, hasError: Boolean)
+
     @Query("UPDATE track SET loopEnabled = :loopEnabled WHERE uri = :uri")
     abstract suspend fun setTrackLoopEnabled(uri: Uri, loopEnabled: Boolean)
+
+    @Query("SELECT * FROM track WHERE uri = :uri")
+    abstract suspend fun getTrack(uri: Uri): Track?
+
+    @Query("UPDATE playlistTrack SET trackUri = :newUri WHERE trackUri = :oldUri")
+    abstract suspend fun updatePlaylistTrackUris(oldUri: Uri, newUri: Uri)
+
+    @Query("SELECT COUNT(*) FROM playlistTrack WHERE trackUri = :uri")
+    abstract suspend fun getTrackUseCount(uri: Uri): Int
+
+    @Query("DELETE FROM track WHERE uri = :uri")
+    abstract suspend fun deleteTrack(uri: Uri)
+
+    @Transaction
+    open suspend fun updateTrackUri(oldUri: Uri, newUri: Uri) {
+        if (oldUri == newUri) return
+        val existingNewTrack = getTrack(newUri)
+        if (existingNewTrack == null) {
+            val oldTrack = getTrack(oldUri) ?: return
+            insertTracks(listOf(oldTrack.copy(uri = newUri, hasError = false)))
+        } else {
+            setTrackHasError(newUri, false)
+        }
+        updatePlaylistTrackUris(oldUri, newUri)
+        if (getTrackUseCount(oldUri) == 0)
+            deleteTrack(oldUri)
+    }
 
     // --- NUEVO: M�todo para obtener todos los tracks (para el servicio de recuperaci�n) ---
     @Query("SELECT * FROM track")
