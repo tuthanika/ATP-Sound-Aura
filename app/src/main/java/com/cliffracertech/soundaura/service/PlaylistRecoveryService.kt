@@ -24,28 +24,29 @@ class PlaylistRecoveryService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Corremos la recuperación en segundo plano sin bloquear el hilo principal
+        // Run recovery in the background without blocking the main thread
         CoroutineScope(Dispatchers.IO).launch {
             recoverPlaylistPermissions()
         }
-        // No queremos que el servicio se mantenga vivo si no es necesario.
-        // Se detendrá a sí mismo cuando termine la corrutina.
+        // We don't want the service to stay alive if not necessary.
+        // It will stop itself when the coroutine finishes.
         return START_NOT_STICKY
     }
 
     private suspend fun recoverPlaylistPermissions() {
-        // 1. Obtener todas las pistas de la base de datos
+        // 1. Get all tracks from the database
         val allTracks: List<Track> = playlistDao.getAllTracks()
 
-        // 2. Intentar adquirir permisos para todas las URIs
-        val urisToRecover = allTracks.map { it.uri }
+        // 2. Filter for URIs that do not already have persistable permissions
+        val persistedUris = contentResolver.persistedUriPermissions.map { it.uri }.toSet()
+        val urisToRecover = allTracks.map { it.uri }.filter { it !in persistedUris }
 
         if (urisToRecover.isNotEmpty()) {
-            // 3. Intentar adquirir permisos. Esto no bloqueará la UI.
+            // 3. Attempt to acquire permissions. This will not block the UI.
             permissionHandler.acquirePermissionsFor(urisToRecover)
         }
 
-        // 4. Detener el servicio una vez finalizado
+        // 4. Stop the service once finished
         stopSelf()
     }
 }
