@@ -83,8 +83,8 @@ class AddToLibraryUseCase(
         name: String,
         shuffle: Boolean,
         playSequentially: Boolean,
-        tracks: List<Track>,
-        trackUris: List<Uri> = tracks.map(Track::uri)
+        tracks: List<com.cliffracertech.soundaura.model.database.TrackWithVolume>,
+        trackUris: List<Uri> = tracks.map { it.uri }
     ): Result {
         val newUris = dao.filterNewUris(trackUris)
         val succeeded = permissionHandler.acquirePermissionsFor(newUris)

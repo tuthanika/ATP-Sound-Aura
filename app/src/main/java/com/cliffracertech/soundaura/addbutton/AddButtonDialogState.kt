@@ -206,7 +206,7 @@ sealed class AddButtonDialogState(
         onDismissRequest: () -> Unit,
         onBackClick: () -> Unit,
         trackUris: List<Uri>,
-        private val onFinish: (shuffleEnabled: Boolean, playSequentially: Boolean, newTrackList: List<Track>) -> Unit,
+        private val onFinish: (shuffleEnabled: Boolean, playSequentially: Boolean, newTrackList: List<com.cliffracertech.soundaura.model.database.TrackWithVolume>) -> Unit,
     ): AddButtonDialogState(onDismissRequest) {
         var shuffleEnabled by mutableStateOf(false)
             private set
@@ -214,7 +214,9 @@ sealed class AddButtonDialogState(
             private set
         val onShuffleSwitchClick = { shuffleEnabled = !shuffleEnabled }
         val onPlaybackModeSwitchClick = { playSequentially = !playSequentially }
-        val mutablePlaylist = MutablePlaylist(trackUris.map(::Track))
+        val mutablePlaylist = MutablePlaylist(trackUris.map { 
+            com.cliffracertech.soundaura.model.database.TrackWithVolume(it, false, true, 1f)
+        })
 
         override val wasNavigatedForwardTo = true
         override val titleResId = R.string.configure_playlist_dialog_title

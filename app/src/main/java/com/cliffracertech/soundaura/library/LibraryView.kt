@@ -257,7 +257,7 @@ sealed class LibraryState {
 
     private fun showFileChooser(
         target: Playlist,
-        existingTracks: List<Track>,
+        existingTracks: List<com.cliffracertech.soundaura.model.database.TrackWithVolume>,
         shuffleEnabled: Boolean = false,
         playSequentially: Boolean = true,
     ) {
@@ -274,14 +274,16 @@ sealed class LibraryState {
                     dismissDialog()
                 else showPlaylistOptions(target, existingTracks, shuffleEnabled, playSequentially)
             }, onChosenFilesValidated = { validatedFiles ->
-                val newTrackList = existingTracks + validatedFiles.map(::Track)
+                val newTrackList = existingTracks + validatedFiles.map { 
+                    com.cliffracertech.soundaura.model.database.TrackWithVolume(it, false, true, 1f)
+                }
                 showPlaylistOptions(target, newTrackList, shuffleEnabled, playSequentially)
             })
     }
 
     private fun showPlaylistOptions(
         target: Playlist,
-        existingTracks: List<Track>,
+        existingTracks: List<com.cliffracertech.soundaura.model.database.TrackWithVolume>,
         shuffleEnabled: Boolean,
         playSequentially: Boolean,
     ) {
@@ -312,7 +314,7 @@ sealed class LibraryState {
         target: Playlist,
         shuffleEnabled: Boolean,
         playSequentially: Boolean,
-        existingTracks: List<Track>,
+        existingTracks: List<com.cliffracertech.soundaura.model.database.TrackWithVolume>,
         result: ModifyLibraryUseCase.Result.NewTracksNotAdded,
     ) {
         shownDialog = PlaylistDialog.RequestStoragePermissionExplanation(
@@ -329,7 +331,9 @@ sealed class LibraryState {
                         if (permissionGranted) scope.launchIO {
                             modifyLibrary.setPlaylistShuffleAndTracks(
                                 target.id, shuffleEnabled, playSequentially,
-                                existingTracks + result.unaddedUris.map(::Track))
+                                existingTracks + result.unaddedUris.map {
+                                    com.cliffracertech.soundaura.model.database.TrackWithVolume(it, false, true, 1f)
+                                })
                         } else messageHandler.postMessage(
                             stringResId = R.string.cant_add_playlist_tracks_warning,
                             duration = SnackbarDuration.Long)
@@ -356,7 +360,7 @@ sealed class LibraryState {
             onFolderChosen = { newFolderUri ->
                 scope.launchIO {
                     uriPermissionHandler.acquirePermissionsFor(listOf(newFolderUri))
-                    val tracks: List<com.cliffracertech.soundaura.model.database.Track> =
+                    val tracks: List<com.cliffracertech.soundaura.model.database.TrackWithVolume> =
                         readLibrary.getPlaylistTracks(target.id)
                     val newFolder = androidx.documentfile.provider.DocumentFile.fromTreeUri(context, newFolderUri) ?: return@launchIO
                     val newFolderFiles = newFolder.listFiles()

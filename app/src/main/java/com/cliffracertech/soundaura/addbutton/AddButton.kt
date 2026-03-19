@@ -228,7 +228,7 @@ class AddButtonViewModel @Inject constructor(
         uris: List<Uri>,
         shuffle: Boolean,
         playSequentially: Boolean,
-        tracks: List<Track>,
+        tracks: List<com.cliffracertech.soundaura.model.database.TrackWithVolume>,
     ) {
         scope.launch {
             when (val result = withContext(Dispatcher.IO) {

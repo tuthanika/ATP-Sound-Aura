@@ -40,6 +40,21 @@ data class Track(
     }
 }
 
+/** A data class that contains [Track] metadata along with the
+ *  track's volume within a specific playlist. */
+data class TrackWithVolume(
+    val uri: Uri,
+    val hasError: Boolean,
+    val loopEnabled: Boolean,
+    @FloatRange(from = 0.0, to = 1.0)
+    val volume: Float,
+) {
+    constructor(track: Track, volume: Float) :
+        this(track.uri, track.hasError, track.loopEnabled, volume)
+
+    val track get() = Track(uri, hasError, loopEnabled)
+}
+
 @Entity(
     tableName = "playlist",
     indices = [Index(value = ["name"], unique = true)])
@@ -102,7 +117,10 @@ data class Playlist(
 data class PlaylistTrack(
     val playlistId: Long,
     val playlistOrder: Int,
-    val trackUri: Uri)
+    val trackUri: Uri,
+    @FloatRange(from = 0.0, to = 1.0)
+    @ColumnInfo(defaultValue = "1.0")
+    val volume: Float = 1f)
 
 /** A [ListValidator] that validates a list of new single-track [Playlist] names. */
 class TrackNamesValidator(

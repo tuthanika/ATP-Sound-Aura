@@ -89,7 +89,7 @@ sealed class PlaylistDialog(
     class FileChooser(
         target: Playlist,
         private val messageHandler: MessageHandler,
-        currentTracks: List<Track>,
+        currentTracks: List<com.cliffracertech.soundaura.model.database.TrackWithVolume>,
         onDismissRequest: () -> Unit,
         private val onChosenFilesValidated: (List<Uri>) -> Unit,
     ): PlaylistDialog(target, onDismissRequest) {
@@ -140,7 +140,7 @@ sealed class PlaylistDialog(
      */
     class PlaylistOptions(
         target: Playlist,
-        private val playlistTracks: List<Track>,
+        private val playlistTracks: List<com.cliffracertech.soundaura.model.database.TrackWithVolume>,
         shuffleEnabled: Boolean,
         playSequentially: Boolean,
         onDismissRequest: () -> Unit,
@@ -149,7 +149,7 @@ sealed class PlaylistDialog(
         private val onConfirm: (
             shuffleEnabled: Boolean,
             playSequentially: Boolean,
-            newTrackList: List<Track>,
+            newTrackList: List<com.cliffracertech.soundaura.model.database.TrackWithVolume>,
         ) -> Unit,
     ): PlaylistDialog(target, onDismissRequest) {
         var shuffleEnabled by mutableStateOf(shuffleEnabled)

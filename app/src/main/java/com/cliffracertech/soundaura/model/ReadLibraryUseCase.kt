@@ -82,8 +82,8 @@ class ReadLibraryUseCase @Inject constructor(
         }.transformLatest { emitAll(it) }
         .map(List<Playlist>::toImmutableList)
 
-    /** Return a [List] of the [Track]s in the [Playlist] identified by [playlistId]. */
-    suspend fun getPlaylistTracks(playlistId: Long): List<Track> =
+    /** Return a [List] of the [com.cliffracertech.soundaura.model.database.TrackWithVolume]s in the [Playlist] identified by [playlistId]. */
+    suspend fun getPlaylistTracks(playlistId: Long): List<com.cliffracertech.soundaura.model.database.TrackWithVolume> =
         dao.getPlaylistTracks(playlistId)
 
     /** Return whether or not the [Playlist] identified

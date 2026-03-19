@@ -28,7 +28,8 @@ data class PlaylistMetadata(
 data class PlaylistTrackMetadata(
     val playlistId: Long,
     val playlistOrder: Int,
-    val trackUri: String
+    val trackUri: String,
+    val volume: Float = 1f
 )
 
 @Serializable

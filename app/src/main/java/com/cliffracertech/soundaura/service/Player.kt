@@ -11,7 +11,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player as ExoPlayerState
 import androidx.media3.exoplayer.ExoPlayer
-import com.cliffracertech.soundaura.model.database.Track
+import com.cliffracertech.soundaura.model.database.TrackWithVolume
 
 data class ActivePlaylistSummary(
     val id: Long,
@@ -20,14 +20,14 @@ data class ActivePlaylistSummary(
     val volume: Float,
     val volumeBoostDb: Int)
 
-typealias ActivePlaylist = Map.Entry<ActivePlaylistSummary, List<Track>>
+typealias ActivePlaylist = Map.Entry<ActivePlaylistSummary, List<TrackWithVolume>>
 val ActivePlaylist.id get() = key.id
 val ActivePlaylist.shuffle get() = key.shuffle
 val ActivePlaylist.playSequentially get() = key.playSequentially
 val ActivePlaylist.volume get() = key.volume
 val ActivePlaylist.volumeBoostDb get() = key.volumeBoostDb
 val ActivePlaylist.tracks get() = value
-val ActivePlaylist.trackUris get() = value.map(Track::uri)
+val ActivePlaylist.trackUris get() = value.map(TrackWithVolume::uri)
 
 class Player(
     private val context: Context,
@@ -66,17 +66,31 @@ class Player(
     }
 
     fun setVolume(volume: Float) {
-        exoPlayers.forEach { it.volume = volume * (masterVolume * masterVolume) }
+        if (playlist.playSequentially) {
+            exoPlayers.firstOrNull()?.apply {
+                val currentTrack = currentMediaItemIndex.let {
+                    if (it in playlist.tracks.indices) playlist.tracks[it] else null
+                }
+                val trackVol = currentTrack?.volume ?: 1f
+                this.volume = volume * (masterVolume * masterVolume) * trackVol
+            }
+        } else exoPlayers.forEachIndexed { index, player ->
+            player.volume = volume * (masterVolume * masterVolume) * playlist.tracks[index].volume
+        }
     }
 
     fun update(newPlaylist: ActivePlaylist, startImmediately: Boolean) {
-        if (
-            newPlaylist.shuffle != playlist.shuffle ||
+        val tracksChanged = newPlaylist.tracks.size != playlist.tracks.size ||
+                            newPlaylist.tracks.zip(playlist.tracks).any { (new, old) ->
+                                new.uri != old.uri || new.loopEnabled != old.loopEnabled
+                            }
+        if (newPlaylist.shuffle != playlist.shuffle ||
             newPlaylist.playSequentially != playlist.playSequentially ||
-            newPlaylist.tracks != playlist.tracks
+            tracksChanged
         ) {
             initializeExoPlayer(startImmediately, newPlaylist)
         } else {
+            playlist = newPlaylist
             setVolume(newPlaylist.volume)
             targetBoostDb = newPlaylist.volumeBoostDb
             applyVolumeBoost()
@@ -114,8 +128,27 @@ class Player(
                 setMediaItems(sourcePlaylist.trackUris.map(MediaItem::fromUri))
                 repeatMode = ExoPlayerState.REPEAT_MODE_ALL
                 shuffleModeEnabled = sourcePlaylist.shuffle
-                volume = sourcePlaylist.volume * (masterVolume * masterVolume)
+                // Sequential playback uses the playlist volume as the base
+                // for all tracks; per-track volume is not used for sequential
+                // playback because it might be confusing if the volume jumps
+                // between tracks in a single playlist.
+                // However, the user request says "volume các sound trong 1 playlist là cấp 3"
+                // which might imply it should apply to sequential too.
+                // Let's check the current item index if possible, but ExoPlayer.volume is per player.
+                // To support per-track volume in sequential playback, we'd need to update
+                // the volume on each media item transition.
+                val updateSequentialVolume = {
+                    val currentTrack = currentMediaItemIndex.let { 
+                        if (it in tracks.indices) tracks[it] else null
+                    }
+                    val trackVol = currentTrack?.volume ?: 1f
+                    volume = sourcePlaylist.volume * (masterVolume * masterVolume) * trackVol
+                }
+                updateSequentialVolume()
                 addListener(object : ExoPlayerState.Listener {
+                    override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                        updateSequentialVolume()
+                    }
                     override fun onPlaybackStateChanged(playbackState: Int) {
                         notifyPlaybackCompleteIfNeeded()
                     }
@@ -134,7 +167,7 @@ class Player(
                 repeatMode = if (track.loopEnabled)
                     ExoPlayerState.REPEAT_MODE_ONE
                 else ExoPlayerState.REPEAT_MODE_OFF
-                volume = sourcePlaylist.volume * (masterVolume * masterVolume)
+                volume = sourcePlaylist.volume * (masterVolume * masterVolume) * track.volume
                 addListener(object : ExoPlayerState.Listener {
                     override fun onPlaybackStateChanged(playbackState: Int) {
                         notifyPlaybackCompleteIfNeeded()
@@ -200,7 +233,10 @@ class PlayerMap(
 
     fun releaseAll() = playerMap.values.forEach(Player::release)
 
-    fun update(playlists: Map<ActivePlaylistSummary, List<Track>>, startPlaying: Boolean) {
+    fun update(
+        playlists: Map<ActivePlaylistSummary, List<TrackWithVolume>>,
+        startPlaying: Boolean
+    ) {
         val oldMap = playerMap
         playerMap = HashMap(playlists.size)
 

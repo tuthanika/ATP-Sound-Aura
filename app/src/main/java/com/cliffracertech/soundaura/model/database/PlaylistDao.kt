@@ -21,7 +21,7 @@ typealias LibraryPlaylist = com.cliffracertech.soundaura.library.Playlist
 private const val librarySelectBase =
     "SELECT id, name, isActive, " +
            "COUNT(playlistId) = 1 AS isSingleTrack, " +
-           "shuffle, playSequentially, MIN(track.loopEnabled) as loopEnabled, volume, volumeBoostDb, " +
+           "shuffle, playSequentially, MIN(track.loopEnabled) as loopEnabled, playlist.volume, volumeBoostDb, " +
            "SUM(track.hasError) = COUNT(track.hasError) as hasError " +
     "FROM playlist " +
     "JOIN playlistTrack ON playlist.id = playlistTrack.playlistId " +
@@ -69,15 +69,15 @@ private const val librarySelectWithFilter =
         playlistName: String,
         shuffle: Boolean,
         playSequentially: Boolean = true,
-        tracks: List<Track>,
+        tracks: List<TrackWithVolume>,
         newUris: List<Uri>? = null,
     ): Long {
-        insertTracks(newUris?.map(::Track) ?: tracks)
+        insertTracks(newUris?.map(::Track) ?: tracks.map { it.track })
         tracks.forEach { setTrackLoopEnabled(it.uri, it.loopEnabled) }
         insertPlaylist(playlistName, shuffle, playSequentially)
         val id = getLastInsertId()
         insertPlaylistTracks(tracks.mapIndexed { index, track ->
-            PlaylistTrack(id, index, track.uri)
+            PlaylistTrack(id, index, track.uri, track.volume)
         })
         return id
     }
@@ -165,19 +165,19 @@ private const val librarySelectWithFilter =
         playlistId: Long,
         shuffle: Boolean,
         playSequentially: Boolean = true,
-        tracks: List<Track>,
+        tracks: List<TrackWithVolume>,
         newUris: List<Uri>? = null,
         removableUris: List<Uri>? = null,
     ): List<Uri> {
         val removedUris = removableUris ?:
-            getUniqueUrisNotIn(tracks.map(Track::uri), playlistId)
+            getUniqueUrisNotIn(tracks.map(TrackWithVolume::uri), playlistId)
         deleteTracks(removedUris)
-        insertTracks(newUris?.map(::Track) ?: tracks)
+        insertTracks(newUris?.map(::Track) ?: tracks.map { it.track })
         tracks.forEach { setTrackLoopEnabled(it.uri, it.loopEnabled) }
 
         deletePlaylistTracks(playlistId)
         insertPlaylistTracks(tracks.mapIndexed { index, track ->
-            PlaylistTrack(playlistId, index, track.uri)
+            PlaylistTrack(playlistId, index, track.uri, track.volume)
         })
         setPlaylistShuffle(playlistId, shuffle)
         setPlaylistPlaySequentially(playlistId, playSequentially)
@@ -276,22 +276,26 @@ private const val librarySelectWithFilter =
 
     /** Return a [Flow] that updates with a [Map] of each active
      * [Playlist] (represented as an [ActivePlaylistSummary]
-     * mapped to its tracks (represented as a [List] of [Uri]s). */
+     * mapped to its tracks (represented as a [List] of [TrackWithVolume]s). */
     @MapInfo(valueColumn = "uri")
-    @Query("SELECT id, shuffle, playSequentially, volume, volumeBoostDb, uri, hasError, loopEnabled " +
+    @Query("SELECT id, shuffle, playSequentially, playlist.volume, volumeBoostDb, uri, hasError, loopEnabled, playlistTrack.volume " +
            "FROM playlist " +
            "JOIN playlistTrack ON playlist.id = playlistTrack.playlistId " +
            "JOIN track on playlistTrack.trackUri = track.uri " +
            "WHERE isActive ORDER by playlistOrder")
-    abstract fun getActivePlaylistsAndTracks(): Flow<Map<ActivePlaylistSummary, List<Track>>>
+    abstract fun getActivePlaylistsAndTracks(): Flow<Map<ActivePlaylistSummary, List<TrackWithVolume>>>
 
     @Query("SELECT name FROM playlist")
     abstract suspend fun getPlaylistNames(): List<String>
 
-    @Query("SELECT uri, hasError, loopEnabled FROM playlistTrack " +
+    @Query("SELECT uri, hasError, loopEnabled, volume FROM playlistTrack " +
            "JOIN track on playlistTrack.trackUri = track.uri " +
            "WHERE playlistId = :id ORDER by playlistOrder")
-    abstract suspend fun getPlaylistTracks(id: Long): List<Track>
+    abstract suspend fun getPlaylistTracks(id: Long): List<TrackWithVolume>
+
+    /** Set the volume for the track identified by [trackUri] within the playlist identified by [playlistId]. */
+    @Query("UPDATE playlistTrack SET volume = :volume WHERE playlistId = :playlistId AND trackUri = :trackUri")
+    abstract suspend fun setPlaylistTrackVolume(playlistId: Long, trackUri: Uri, volume: Float)
 
     /** Rename the [Playlist] identified by [id] to [newName]. */
     @Query("UPDATE playlist SET name = :newName WHERE id = :id")
@@ -362,7 +366,7 @@ private const val librarySelectWithFilter =
         SELECT id, name, shuffle, playSequentially, isActive,
         COUNT(playlistId) = 1 AS isSingleTrack,
         MIN(track.loopEnabled) as loopEnabled,
-        volume, volumeBoostDb,
+        playlist.volume, volumeBoostDb,
         SUM(track.hasError) = COUNT(track.hasError) as hasError
         FROM playlist
         JOIN playlistTrack ON playlist.id = playlistTrack.playlistId

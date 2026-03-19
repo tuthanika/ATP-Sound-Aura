@@ -82,7 +82,8 @@
     <string name="playlist_track_error_message">Archivo faltante/corrupto:</string>
     <string name="playlist_track_delete_description">Eliminar %1$s</string>
     <string name="playlist_add_tracks_button_description">Añadir pistas a %1$s</string>
-    <string name="configure_playlist_dialog_title">Configurar opciones de lista</string>
+    <string name="playlist_track_volume_description">Volumen de %1$s</string>
+    <string name="configure_playlist_dialog_title">Configurar opciones de lista de reproducción</string>
 
     <!-- File chooser -->
     <string name="file_chooser_no_valid_tracks_error_message">

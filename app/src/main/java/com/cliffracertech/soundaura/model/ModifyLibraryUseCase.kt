@@ -30,6 +30,10 @@ class ModifyLibraryUseCase(
         dao.setVolume(playlistId, newVolume)
     }
 
+    suspend fun setPlaylistTrackVolume(playlistId: Long, trackUri: Uri, newVolume: Float) {
+        dao.setPlaylistTrackVolume(playlistId, trackUri, newVolume)
+    }
+
     /**
      * Return a [ValidatedNamingState] that can be used to rename the
      * playlist whose old name matches [oldName]. [onFinished] will be
@@ -81,9 +85,9 @@ class ModifyLibraryUseCase(
         playlistId: Long,
         shuffle: Boolean,
         playSequentially: Boolean,
-        tracks: List<Track>
+        tracks: List<com.cliffracertech.soundaura.model.database.TrackWithVolume>
     ): Result {
-        val uris = tracks.map(Track::uri)
+        val uris = tracks.map { it.uri }
         val newUris = dao.filterNewUris(uris)
         val releasableUris = dao.getUniqueUrisNotIn(uris, playlistId)
         permissionHandler.releasePermissionsFor(releasableUris)
@@ -99,11 +103,12 @@ class ModifyLibraryUseCase(
                 removableUris = releasableUris)
             Result.Success
         } else {
+            val unaddedUris = newUris.toSet()
             dao.setPlaylistShuffleAndTracks(
                 playlistId = playlistId,
                 shuffle = shuffle,
                 playSequentially = playSequentially,
-                tracks = tracks.filter { it.uri !in newUris.toSet() },
+                tracks = tracks.filter { it.uri !in unaddedUris },
                 newUris = emptyList(),
                 removableUris = releasableUris)
             Result.NewTracksNotAdded(

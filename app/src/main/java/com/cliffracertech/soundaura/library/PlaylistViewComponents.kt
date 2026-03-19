@@ -67,6 +67,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material.Slider
+import androidx.compose.material.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.window.Popup
+import kotlin.math.roundToInt
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import com.cliffracertech.soundaura.R
@@ -158,12 +167,13 @@ import java.io.File
  * uri and hasError properties can be accessed through the properties
  * [uri] and [hasError]. [markedForRemoval] represents whether the track
  * will be removed from the playlist once changes are applied. */
-typealias RemovablePlaylistTrack = Pair<Track, Boolean>
+typealias RemovablePlaylistTrack = Pair<com.cliffracertech.soundaura.model.database.TrackWithVolume, Boolean>
 val RemovablePlaylistTrack.track get() = first
 val RemovablePlaylistTrack.uri get() = first.uri
 val RemovablePlaylistTrack.hasError get() = first.hasError
 val RemovablePlaylistTrack.markedForRemoval get() = second
 val RemovablePlaylistTrack.loopEnabled get() = first.loopEnabled
+val RemovablePlaylistTrack.volume get() = first.volume
 
 /**
  * MutablePlaylist represents the state of a list of reorderable [RemovablePlaylistTrack]s.
@@ -174,7 +184,7 @@ val RemovablePlaylistTrack.loopEnabled get() = first.loopEnabled
  * method [applyChanges] will return a [List] of the [Track]s in their new
  * order and without the tracks that were marked for removal.
  */
-class MutablePlaylist(tracks: List<Track>) {
+class MutablePlaylist(tracks: List<com.cliffracertech.soundaura.model.database.TrackWithVolume>) {
     private val mutableTracks = tracks.map { it to false }
                                       .toMutableStateList()
     private var trackCount = tracks.size
@@ -207,6 +217,12 @@ class MutablePlaylist(tracks: List<Track>) {
         if (index !in tracks.indices) return
         val (track, removed) = mutableTracks[index]
         mutableTracks[index] = track.copy(loopEnabled = !track.loopEnabled) to removed
+    }
+
+    fun setTrackVolume(index: Int, volume: Float) {
+        if (index !in tracks.indices) return
+        val (track, removed) = mutableTracks[index]
+        mutableTracks[index] = track.copy(volume = volume) to removed
     }
 }
 
@@ -394,6 +410,61 @@ class MutablePlaylist(tracks: List<Track>) {
                             modifier = Modifier.size(40.dp),
                             tint = if (track.loopEnabled) MaterialTheme.colors.primaryVariant else LocalContentColor.current.copy(alpha = 0.45f),
                             onClick = { mutablePlaylist.toggleTrackLoop(index) })
+
+                        var showingVolumeSlider by remember { mutableStateOf(false) }
+
+                        androidx.compose.runtime.LaunchedEffect(showingVolumeSlider, track.volume) {
+                            if (showingVolumeSlider) {
+                                kotlinx.coroutines.delay(5000L)
+                                showingVolumeSlider = false
+                            }
+                        }
+
+                        TextButton(
+                            onClick = { showingVolumeSlider = !showingVolumeSlider },
+                            modifier = Modifier.size(40.dp),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            val volumeText = (track.volume * 100).roundToInt().toString()
+                            Text(
+                                text = volumeText,
+                                style = MaterialTheme.typography.body2.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colors.primaryVariant
+                            )
+                        }
+
+                        if (showingVolumeSlider) {
+                            Popup(
+                                alignment = Alignment.BottomCenter,
+                                onDismissRequest = { showingVolumeSlider = false }
+                            ) {
+                                Surface(
+                                    modifier = Modifier.padding(bottom = 40.dp),
+                                    shape = MaterialTheme.shapes.small,
+                                    elevation = 8.dp
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .width(48.dp)
+                                            .height(140.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Slider(
+                                            value = track.volume,
+                                            onValueChange = { mutablePlaylist.setTrackVolume(index, it) },
+                                            modifier = Modifier
+                                                .graphicsLayer {
+                                                    rotationZ = 270f
+                                                    transformOrigin = TransformOrigin(0.5f, 0.5f)
+                                                }
+                                                .width(120.dp),
+                                            valueRange = 0f..1f
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
                         SimpleIconButton(
                             icon = if (markedForRemoval) Icons.Default.Undo else Icons.Default.Delete,
                             contentDescription = stringResource(
@@ -412,9 +483,9 @@ class MutablePlaylist(tracks: List<Track>) {
 @Preview @Composable fun PlaylistOptionsPreview() = SoundAuraTheme {
     var shuffleEnabled by rememberMutableStateOf(false)
     val mutablePlaylist = remember {
-        MutablePlaylist(List(5) { Track(
+        MutablePlaylist(List(5) { com.cliffracertech.soundaura.model.database.TrackWithVolume(
             uri = "file:/directory/subdirectory/extra_super_duper_really_long_file_name_$it".toUri(),
-            hasError = it % 2 == 1)
+            hasError = it % 2 == 1, loopEnabled = true, volume = 1f)
         })
     }
     Surface { Column(Modifier.padding(vertical = 16.dp)) {

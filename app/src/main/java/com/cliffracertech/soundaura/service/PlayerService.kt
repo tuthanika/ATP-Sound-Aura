@@ -300,7 +300,7 @@ class PlayerService: LifecycleService() {
         updateNotification()
     }
 
-    private fun updatePlayers(playlists: Map<ActivePlaylistSummary, List<Track>>) {
+    private fun updatePlayers(playlists: Map<ActivePlaylistSummary, List<com.cliffracertech.soundaura.model.database.TrackWithVolume>>) {
         playerMap.update(playlists, isPlaying)
 
         // If the new track list is empty when isPlaying is true, we want

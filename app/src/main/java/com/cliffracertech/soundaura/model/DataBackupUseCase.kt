@@ -63,7 +63,7 @@ class DataBackupUseCase @Inject constructor(
                              it.isActive, it.volume, it.volumeBoostDb)
         }
         val playlistTracks = playlistDao.getAllPlaylistTracks().map {
-            PlaylistTrackMetadata(it.playlistId, it.playlistOrder, it.trackUri.toString())
+            PlaylistTrackMetadata(it.playlistId, it.playlistOrder, it.trackUri.toString(), it.volume)
         }
         val presets = presetDao.getAllPresets().map {
             PresetMetadata(it.name)
@@ -119,7 +119,7 @@ class DataBackupUseCase @Inject constructor(
                          it.isActive, it.volume, it.volumeBoostDb)
             })
             playlistDao.insertPlaylistTracks(appData.playlistTracks.map {
-                PlaylistTrack(it.playlistId, it.playlistOrder, Uri.parse(it.trackUri))
+                PlaylistTrack(it.playlistId, it.playlistOrder, Uri.parse(it.trackUri), it.volume)
             })
             presetDao.insertPresets(appData.presets.map { Preset(it.name) })
             presetDao.insertPresetPlaylists(appData.presetPlaylists.map {
