@@ -360,4 +360,22 @@ Only needed when playing in background</string>
     <string name="play_pause_description">Toggle Play/Pause</string>
     <string name="stop_description">Stop Playback</string>
     <string name="load">Load</string>
+
+    <!-- Backup and Restore -->
+    <string name="backup_restore">Backup and Restore</string>
+    <string name="backup_data">Backup data</string>
+    <string name="backup_data_description">Save app settings, sounds, and playlists to a file</string>
+    <string name="restore_data">Restore data</string>
+    <string name="restore_data_description">Restore app state from a backup file</string>
+    <string name="restore_data_confirm_title">Confirm Restore?</string>
+    <string name="restore_data_confirm_message">This will overwrite your current library and settings. Are you sure?</string>
+    <string name="backup_success">Backup saved successfully</string>
+    <string name="backup_error">Error during backup: %1$s</string>
+    <string name="restore_success">Data restored successfully</string>
+    <string name="restore_error">Error during restore: %1$s</string>
+    <string name="invalid_backup_file_error">Invalid backup file</string>
+    <string name="relink_sounds">Relink all sounds</string>
+    <string name="relink_sounds_description">Select the folder where your sounds are to fix missing path errors.</string>
+    <string name="relink_success">Successfully relinked %1$d sounds!</string>
+    <string name="relink_no_matches">No matching sounds found in the selected folder.</string>
 </resources>

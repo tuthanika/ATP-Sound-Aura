@@ -4,13 +4,7 @@
 package com.cliffracertech.soundaura.model.database
 
 import androidx.annotation.FloatRange
-import androidx.room.Dao
-import androidx.room.Entity
-import androidx.room.ForeignKey
-import androidx.room.PrimaryKey
-import androidx.room.Query
-import androidx.room.RoomWarnings
-import androidx.room.Transaction
+import androidx.room.*
 import com.cliffracertech.soundaura.Dispatcher
 import com.cliffracertech.soundaura.R
 import com.cliffracertech.soundaura.model.Validator
@@ -117,6 +111,18 @@ data class PresetPlaylist(
         deletePresetContents(presetName)
         addPresetContents(presetName)
     }
+
+    @Query("SELECT * FROM preset")
+    abstract suspend fun getAllPresets(): List<Preset>
+
+    @Query("SELECT * FROM presetPlaylist")
+    abstract suspend fun getAllPresetPlaylists(): List<PresetPlaylist>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    abstract suspend fun insertPresets(presets: List<Preset>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    abstract suspend fun insertPresetPlaylists(presetPlaylists: List<PresetPlaylist>)
 }
 
 /**

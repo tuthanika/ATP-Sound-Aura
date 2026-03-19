@@ -35,11 +35,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.net.Uri
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cliffracertech.soundaura.R
 import com.cliffracertech.soundaura.dialog.DialogWidth
 import com.cliffracertech.soundaura.ui.HorizontalDivider
+import com.cliffracertech.soundaura.dialog.SoundAuraDialog
 
 @Composable fun AppSettings(
     contentPadding: PaddingValues,
@@ -52,7 +57,15 @@ import com.cliffracertech.soundaura.ui.HorizontalDivider
     ) {
         item { DisplaySettingsCategory() }
         item { PlaybackSettingsCategory() }
+        item { BackupSettingsCategory() }
         item { AboutSettingsCategory() }
+    }
+
+    val viewModel: SettingsViewModel = viewModel()
+    val context = LocalContext.current
+    viewModel.message?.let {
+        Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+        viewModel.onMessageDismiss()
     }
 }
 
@@ -193,5 +206,59 @@ import com.cliffracertech.soundaura.ui.HorizontalDivider
         HorizontalDivider(paddingModifier)
         DialogSetting(stringResource(R.string.about_app_setting_title), paddingModifier) {
             AboutAppDialog(onDismissRequest = it)
+        }
+    }
+
+@Composable private fun BackupSettingsCategory() =
+    SettingCategory(stringResource(R.string.backup_restore)) { paddingModifier ->
+        val viewModel: SettingsViewModel = viewModel()
+
+        val backupLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument("application/json")
+        ) { uri ->
+            if (uri != null) viewModel.onBackupRequest(uri)
+        }
+
+        val restoreLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.OpenDocument()
+        ) { uri ->
+            if (uri != null) viewModel.onRestoreRequest(uri)
+        }
+
+        val relinkLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.OpenDocumentTree()
+        ) { uri ->
+            if (uri != null) viewModel.onRelinkRequest(uri)
+        }
+
+        Setting(
+            title = stringResource(R.string.backup_data),
+            modifier = paddingModifier,
+            subtitle = stringResource(R.string.backup_data_description),
+            onClick = { backupLauncher.launch("SoundAuraBackup.json") }
+        ) {}
+        HorizontalDivider(paddingModifier)
+        Setting(
+            title = stringResource(R.string.restore_data),
+            modifier = paddingModifier,
+            subtitle = stringResource(R.string.restore_data_description),
+            onClick = { restoreLauncher.launch(arrayOf("application/json", "application/octet-stream")) }
+        ) {}
+        HorizontalDivider(paddingModifier)
+        Setting(
+            title = stringResource(R.string.relink_sounds),
+            modifier = paddingModifier,
+            subtitle = stringResource(R.string.relink_sounds_description),
+            onClick = { relinkLauncher.launch(null) }
+        ) {}
+
+        if (viewModel.showingRestoreConfirmation) {
+            SoundAuraDialog(
+                title = stringResource(R.string.restore_data_confirm_title),
+                text = stringResource(R.string.restore_data_confirm_message),
+                confirmText = stringResource(R.string.ok),
+                onConfirm = viewModel::onRestoreConfirm,
+                onDismissRequest = viewModel::onRestoreCancel
+            )
         }
     }

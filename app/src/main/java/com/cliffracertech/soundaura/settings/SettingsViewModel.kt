@@ -4,6 +4,7 @@
 package com.cliffracertech.soundaura.settings
 
 import android.Manifest
+import android.net.Uri
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
@@ -27,6 +28,7 @@ import com.cliffracertech.soundaura.launchIO
 import com.cliffracertech.soundaura.model.database.Playlist
 import com.cliffracertech.soundaura.preferenceFlow
 import com.cliffracertech.soundaura.preferenceState
+import com.cliffracertech.soundaura.model.DataBackupUseCase
 import com.cliffracertech.soundaura.service.PlayerService
 import dagger.Module
 import dagger.Provides
@@ -178,8 +180,9 @@ enum class OnZeroVolumeAudioDeviceBehavior {
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    @ApplicationContext context: Context,
+    @ApplicationContext private val context: Context,
     private val dataStore: DataStore<Preferences>,
+    private val dataBackupUseCase: DataBackupUseCase,
 ) : ViewModel() {
     private val scope = viewModelScope + Dispatcher.Immediate
     private val appThemeKey = intPreferencesKey(PrefKeys.appTheme)
@@ -320,4 +323,59 @@ class SettingsViewModel @Inject constructor(
 
     fun onStopInsteadOfPauseClick() =
         dataStore.edit(stopInsteadOfPauseKey, !stopInsteadOfPause, scope)
+
+    var message by mutableStateOf<String?>(null)
+        private set
+
+    fun onMessageDismiss() { message = null }
+
+    fun onBackupRequest(uri: Uri) {
+        scope.launchIO {
+            try {
+                context.contentResolver.openOutputStream(uri)?.use {
+                    dataBackupUseCase.exportAppData(it)
+                }
+                message = context.getString(R.string.backup_success)
+            } catch (e: Exception) {
+                message = context.getString(R.string.backup_error, e.message ?: "")
+            }
+        }
+    }
+
+    var showingRestoreConfirmation by mutableStateOf(false)
+        private set
+    private var pendingRestoreUri: Uri? = null
+
+    fun onRestoreRequest(uri: Uri) {
+        pendingRestoreUri = uri
+        showingRestoreConfirmation = true
+    }
+
+    fun onRestoreConfirm() {
+        val uri = pendingRestoreUri ?: return
+        showingRestoreConfirmation = false
+        pendingRestoreUri = null
+        scope.launchIO {
+            context.contentResolver.openInputStream(uri)?.use {
+                val result = dataBackupUseCase.importAppData(it)
+                message = if (result.isSuccess)
+                    context.getString(R.string.restore_success)
+                else context.getString(R.string.restore_error, result.exceptionOrNull()?.message ?: "")
+            }
+        }
+    }
+
+    fun onRestoreCancel() {
+        showingRestoreConfirmation = false
+        pendingRestoreUri = null
+    }
+
+    fun onRelinkRequest(uri: Uri) {
+        scope.launchIO {
+            val count = dataBackupUseCase.relinkTracks(uri)
+            message = if (count > 0)
+                context.getString(R.string.relink_success, count)
+            else context.getString(R.string.relink_no_matches)
+        }
+    }
 }

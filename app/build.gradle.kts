@@ -8,6 +8,7 @@ plugins {
     id("dagger.hilt.android.plugin")
     id("com.mikepenz.aboutlibraries.plugin.android")
     id("com.google.devtools.ksp")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 kotlin.compilerOptions.jvmTarget = JvmTarget.fromTarget("21")
@@ -102,6 +103,7 @@ dependencies {
     implementation("androidx.compose.material3:material3-window-size-class:1.4.0")
     implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
     implementation("sh.calvin.reorderable:reorderable:3.0.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 
     ksp("androidx.room:room-compiler:2.8.3")

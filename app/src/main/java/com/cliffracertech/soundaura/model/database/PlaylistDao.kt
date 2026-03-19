@@ -1,4 +1,6 @@
-/* ... (resto de los imports y anotaciones superiores) ... */
+/* This file is part of SoundAura, which is released under
+ * the terms of the Apache License 2.0. See license.md in
+ * the project's root directory to see the full license. */
 package com.cliffracertech.soundaura.model.database
 
 import android.net.Uri
@@ -41,7 +43,7 @@ private const val librarySelectWithFilter =
     protected abstract suspend fun insertTrack(uri: Uri)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    protected abstract suspend fun insertTracks(tracks: List<Track>)
+    abstract suspend fun insertTracks(tracks: List<Track>)
 
     @Query("INSERT INTO playlist (name, shuffle, playSequentially) VALUES (:name, :shuffle, :playSequentially)")
     protected abstract suspend fun insertPlaylist(name: String, shuffle: Boolean = false, playSequentially: Boolean = true)
@@ -49,8 +51,11 @@ private const val librarySelectWithFilter =
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     protected abstract suspend fun insertPlaylistTrack(playlistTrack: PlaylistTrack)
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    protected abstract suspend fun insertPlaylistTracks(playlistTracks: List<PlaylistTrack>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    abstract suspend fun insertPlaylistTracks(playlistTracks: List<PlaylistTrack>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    abstract suspend fun insertPlaylists(playlists: List<Playlist>)
 
     /**
      * Insert a single [Playlist] whose [Playlist.name] and [Playlist.shuffle]
@@ -298,6 +303,15 @@ private const val librarySelectWithFilter =
     @Query("UPDATE track SET hasError = 1 WHERE uri in (:uris)")
     abstract suspend fun setTracksHaveError(uris: List<Uri>)
 
+    @Query("SELECT * FROM track")
+    abstract suspend fun getAllTracks(): List<Track>
+
+    @Query("SELECT * FROM playlist")
+    abstract suspend fun getAllPlaylists(): List<Playlist>
+
+    @Query("SELECT * FROM playlistTrack")
+    abstract suspend fun getAllPlaylistTracks(): List<PlaylistTrack>
+
     @Query("UPDATE track SET hasError = :hasError WHERE uri = :uri")
     abstract suspend fun setTrackHasError(uri: Uri, hasError: Boolean)
 
@@ -331,11 +345,7 @@ private const val librarySelectWithFilter =
             deleteTrack(oldUri)
     }
 
-    // --- NUEVO: M�todo para obtener todos los tracks (para el servicio de recuperaci�n) ---
-    @Query("SELECT * FROM track")
-    abstract suspend fun getAllTracks(): List<Track>
-
-    // --- M�TODO PARA EL WIDGET (ya lo ten�as esbozado, ahora completo) ---
+    // --- MTODO PARA EL WIDGET (ya lo tenas esbozado, ahora completo) ---
     @Query("""
         SELECT id, name, shuffle, playSequentially, isActive,
         COUNT(playlistId) = 1 AS isSingleTrack,
