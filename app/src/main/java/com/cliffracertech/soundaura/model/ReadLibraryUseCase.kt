@@ -57,10 +57,12 @@ class ReadLibraryUseCase @Inject constructor(
                     PlaylistSort.NameAsc ->    dao.getPlaylistsSortedByActiveThenNameAsc()
                     PlaylistSort.NameDesc ->   dao.getPlaylistsSortedByActiveThenNameDesc()
                     PlaylistSort.OrderAdded -> dao.getPlaylistsSortedByActiveThenOrderAdded()
+                    PlaylistSort.Playlist ->   dao.getPlaylistsSortedByActiveThenPlaylistFirst()
                 } else when (sort) {
                     PlaylistSort.NameAsc ->    dao.getPlaylistsSortedByNameAsc()
                     PlaylistSort.NameDesc ->   dao.getPlaylistsSortedByNameDesc()
                     PlaylistSort.OrderAdded -> dao.getPlaylistsSortedByOrderAdded()
+                    PlaylistSort.Playlist ->   dao.getPlaylistsSortedByPlaylistFirst()
                 }
             } else {
                 val filter = "%$searchQuery%"
@@ -68,10 +70,12 @@ class ReadLibraryUseCase @Inject constructor(
                     PlaylistSort.NameAsc ->    dao.getPlaylistsSortedByActiveThenNameAsc(filter)
                     PlaylistSort.NameDesc ->   dao.getPlaylistsSortedByActiveThenNameDesc(filter)
                     PlaylistSort.OrderAdded -> dao.getPlaylistsSortedByActiveThenOrderAdded(filter)
+                    PlaylistSort.Playlist ->   dao.getPlaylistsSortedByActiveThenPlaylistFirst(filter)
                 } else when (sort) {
                     PlaylistSort.NameAsc ->    dao.getPlaylistsSortedByNameAsc(filter)
                     PlaylistSort.NameDesc ->   dao.getPlaylistsSortedByNameDesc(filter)
                     PlaylistSort.OrderAdded -> dao.getPlaylistsSortedByOrderAdded(filter)
+                    PlaylistSort.Playlist ->   dao.getPlaylistsSortedByPlaylistFirst(filter)
                 }
             }
 

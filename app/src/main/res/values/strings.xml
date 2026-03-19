@@ -218,6 +218,7 @@ Tap the plus symbol next to an added track or playlist to
     <string name="name_ascending">Name ascending</string>
     <string name="name_descending">Name descending</string>
     <string name="order_added">Order added</string>
+    <string name="playlist">Playlist</string>
 
     <!-- Settings -->
     <string name="app_settings_description">SoundAura settings</string>

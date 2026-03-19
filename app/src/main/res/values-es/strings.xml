@@ -201,7 +201,8 @@
     <string name="show_active_playlists_first">Mostrar activos primero</string>
     <string name="name_ascending">Nombre ascendente</string>
     <string name="name_descending">Nombre descendente</string>
-    <string name="order_added">Orden de agregado</string>
+    <string name="order_added">Fecha de adición</string>
+    <string name="playlist">Lista de reproducción</string>
 
     <!-- Settings -->
     <string name="app_settings_description">Configuración de SoundAura</string>

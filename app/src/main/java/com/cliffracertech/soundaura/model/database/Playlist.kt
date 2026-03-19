@@ -73,11 +73,12 @@ data class Playlist(
     @ColumnInfo(defaultValue = "0")
     val volumeBoostDb: Int = 0
 ) {
-    enum class Sort { NameAsc, NameDesc, OrderAdded;
+    enum class Sort { NameAsc, NameDesc, OrderAdded, Playlist;
         fun name(context: Context) = when (this) {
             NameAsc -> context.getString(R.string.name_ascending)
             NameDesc -> context.getString(R.string.name_descending)
             OrderAdded -> context.getString(R.string.order_added)
+            Playlist -> context.getString(R.string.playlist)
         }
     }
 }
