@@ -45,25 +45,6 @@ interface UriPermissionHandler {
     fun releasePermissionsFor(uris: List<Uri>)
 }
 
-/** A mock [UriPermissionHandler] whose methods simulate
- * a limited number of permission allowances. */
-class TestPermissionHandler: UriPermissionHandler {
-    private val grantedPermissions = mutableSetOf<Uri>()
-
-    override val totalAllowance = 12
-    override val usedAllowance get() = grantedPermissions.size
-
-    override fun acquirePermissionsFor(uris: List<Uri>): Boolean {
-        val newUris = uris.filterNot(grantedPermissions::contains)
-        val hasEnoughSpace = remainingAllowance >= uris.size
-        if (hasEnoughSpace)
-            grantedPermissions.addAll(newUris)
-        return hasEnoughSpace
-    }
-    override fun releasePermissionsFor(uris: List<Uri>) {
-        grantedPermissions.removeAll(uris.toSet())
-    }
-}
 
 /**
  * An implementation of [UriPermissionHandler] that takes into account if the
