@@ -106,10 +106,14 @@
 
         <!-- WIDGET: Preset Widget Receiver -->
         <receiver android:name=".widget.PresetWidget"
-            android:exported="false"
+            android:exported="true"
             android:label="@string/presets_widget_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.appwidget.action.APPWIDGET_ENABLED" />
+                <action android:name="android.appwidget.action.APPWIDGET_DISABLED" />
+                <action android:name="android.appwidget.action.APPWIDGET_DELETED" />
+                <action android:name="android.appwidget.action.APPWIDGET_OPTIONS_CHANGED" />
                 <action android:name="com.cliffracertech.soundaura.widget.ACTION_UPDATE_WIDGET" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider"

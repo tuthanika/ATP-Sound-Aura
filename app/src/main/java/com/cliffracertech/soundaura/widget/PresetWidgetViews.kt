@@ -30,8 +30,8 @@ object PresetWidgetViews {
         val isPlaying = PlayerService.playbackState == PlaybackStateCompat.STATE_PLAYING
 
         // Actualizar icono de play/pause
-        val playPauseIcon = if (isPlaying) R.drawable.ic_baseline_pause_24
-                            else           R.drawable.ic_baseline_play_24
+        val playPauseIcon = if (isPlaying) R.drawable.ic_widget_pause
+                            else           R.drawable.ic_widget_play
         views.setImageViewResource(R.id.widget_play_pause, playPauseIcon)
 
         // Actualizar texto de estado

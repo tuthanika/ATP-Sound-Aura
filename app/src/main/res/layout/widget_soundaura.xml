@@ -19,8 +19,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingBottom="8dp"
-            android:background="?android:attr/selectableItemBackground">
+            android:paddingBottom="8dp">
 
             <TextView
                 android:id="@+id/widget_playlist_name"
@@ -77,7 +76,7 @@
                 android:id="@+id/widget_play_pause"
                 android:layout_width="56dp"
                 android:layout_height="56dp"
-                android:src="@drawable/ic_baseline_play_24"
+                android:src="@drawable/ic_widget_play"
                 android:background="@drawable/widget_play_button_bg"
                 android:contentDescription="@string/play_pause" />
 
@@ -86,7 +85,7 @@
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:src="@drawable/ic_baseline_stop_24"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:background="@android:color/transparent"
                 android:contentDescription="@string/stop" />
             <LinearLayout
                 android:id="@+id/widget_master_volume_container"
@@ -95,13 +94,11 @@
                 android:orientation="horizontal"
                 android:layout_marginStart="16dp"
                 android:gravity="center_vertical"
-                android:padding="4dp"
-                android:background="?android:attr/selectableItemBackground">
+                android:padding="4dp">
                 <ImageView
                     android:layout_width="20dp"
                     android:layout_height="20dp"
-                    android:src="@drawable/ic_baseline_volume_up_24"
-                    android:tint="@android:color/white" />
+                    android:src="@drawable/ic_widget_volume" />
                 <TextView
                     android:id="@+id/widget_master_volume_text"
                     android:layout_width="wrap_content"
@@ -126,12 +123,12 @@
         android:clipToPadding="false">
         
         <!-- Mirror Play Button (56dp) -->
-        <Space 
+        <FrameLayout 
             android:layout_width="56dp" 
             android:layout_height="56dp" />
             
         <!-- Mirror Stop Button (48dp) -->
-        <Space 
+        <FrameLayout 
             android:id="@+id/widget_ghost_stop_space"
             android:layout_width="48dp" 
             android:layout_height="56dp"
@@ -169,7 +166,7 @@
             </LinearLayout>
 
             <!-- Bottom gap matches the row height -->
-            <Space android:layout_width="1dp" android:layout_height="1dp" />
+            <FrameLayout android:layout_width="1dp" android:layout_height="1dp" />
         </LinearLayout>
     </LinearLayout>
 
