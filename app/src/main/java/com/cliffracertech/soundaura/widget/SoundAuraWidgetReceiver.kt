@@ -88,19 +88,28 @@ class SoundAuraWidgetReceiver : BroadcastReceiver() {
                     }
                 }
             }
-            SoundAuraWidget.ACTION_TOGGLE_VOLUME_SLIDER -> {
+            SoundAuraWidget.ACTION_CYCLE_VOLUME -> {
                 val pendingResult = goAsync()
                 scope.launch {
                     try {
-                        val key = booleanPreferencesKey(PrefKeys.isVolumeSliderVisible)
-                        val current = context.dataStore.data.first()[key] ?: false
-                        context.dataStore.edit(key, !current)
+                        val volKey = floatPreferencesKey(PrefKeys.masterVolume)
+                        val current = context.dataStore.data.first()[volKey] ?: 1f
                         
-                        if (!current) { // Si se acaba de mostrar, programar auto-hide
-                            scheduleAutoHide(context)
-                        } else {
-                            cancelAutoHide(context)
+                        // Cycle: 0 -> 0.25 -> 0.5 -> 0.75 -> 1.0 -> 0
+                        val next = when {
+                            current < 0.125f -> 0.25f
+                            current < 0.375f -> 0.50f
+                            current < 0.625f -> 0.75f
+                            current < 0.875f -> 1.00f
+                            else -> 0f
                         }
+                        
+                        context.dataStore.edit(volKey, next)
+                        
+                        // Ensure slider is always hidden (just in case)
+                        val visKey = booleanPreferencesKey(PrefKeys.isVolumeSliderVisible)
+                        context.dataStore.edit(visKey, false)
+                        cancelAutoHide(context)
                         
                         withContext(Dispatchers.Main) {
                             SoundAuraWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
@@ -117,26 +126,8 @@ class SoundAuraWidgetReceiver : BroadcastReceiver() {
                 scope.launch {
                     try {
                         val volKey = floatPreferencesKey(PrefKeys.masterVolume)
-                        val visKey = booleanPreferencesKey(PrefKeys.isVolumeSliderVisible)
                         context.dataStore.edit(volKey, volume)
-                        context.dataStore.edit(visKey, false)
-                        cancelAutoHide(context)
                         
-                        withContext(Dispatchers.Main) {
-                            SoundAuraWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
-                            PresetWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
-                        }
-                    } finally {
-                        pendingResult.finish()
-                    }
-                }
-            }
-            SoundAuraWidget.ACTION_HIDE_VOLUME_SLIDER -> {
-                val pendingResult = goAsync()
-                scope.launch {
-                    try {
-                        val key = booleanPreferencesKey(PrefKeys.isVolumeSliderVisible)
-                        context.dataStore.edit(key, false)
                         withContext(Dispatchers.Main) {
                             SoundAuraWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
                             PresetWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)

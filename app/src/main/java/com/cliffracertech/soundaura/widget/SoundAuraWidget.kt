@@ -38,6 +38,7 @@ class SoundAuraWidget : AppWidgetProvider() {
         const val ACTION_UPDATE_WIDGET = "com.cliffracertech.soundaura.widget.ACTION_UPDATE_WIDGET"
         const val ACTION_TOGGLE_VOLUME_SLIDER = "com.cliffracertech.soundaura.widget.ACTION_TOGGLE_VOLUME_SLIDER"
         const val ACTION_SET_VOLUME_LEVEL = "com.cliffracertech.soundaura.widget.ACTION_SET_VOLUME_LEVEL"
+        const val ACTION_CYCLE_VOLUME = "com.cliffracertech.soundaura.widget.ACTION_CYCLE_VOLUME"
         const val ACTION_HIDE_VOLUME_SLIDER = "com.cliffracertech.soundaura.widget.ACTION_HIDE_VOLUME_SLIDER"
         const val EXTRA_VOLUME_LEVEL = "extra_volume_level"
 

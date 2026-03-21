@@ -18,6 +18,7 @@ class PresetRemoteViewsFactory(
 ) : RemoteViewsService.RemoteViewsFactory {
 
     private var presets: List<Preset> = emptyList()
+    private var activeStates: List<Boolean> = emptyList()
     private lateinit var presetDao: PresetDao
 
     override fun onCreate() {
@@ -28,6 +29,19 @@ class PresetRemoteViewsFactory(
     override fun onDataSetChanged() {
         runBlocking {
             presets = presetDao.getPresetList().first()
+            
+            // Check if playback is active
+            val isPlaying = com.cliffracertech.soundaura.service.PlayerService.playbackState ==
+                    android.support.v4.media.session.PlaybackStateCompat.STATE_PLAYING
+            
+            activeStates = if (!isPlaying) {
+                List(presets.size) { false }
+            } else {
+                presets.map { preset ->
+                    // !modified means it matches current selection
+                    !presetDao.getPresetIsModified(preset.name).first()
+                }
+            }
         }
     }
     
@@ -44,6 +58,15 @@ class PresetRemoteViewsFactory(
         val views = RemoteViews(context.packageName, R.layout.widget_preset_item)
 
         views.setTextViewText(R.id.widget_preset_name, preset.name)
+
+        // Highlight active preset
+        if (activeStates.getOrElse(position) { false }) {
+            views.setInt(R.id.widget_preset_item_container, "setBackgroundResource", R.drawable.widget_playlist_item_bg)
+            views.setInt(R.id.widget_preset_item_container, "setBackgroundColor", context.getColor(R.color.widget_active_item_bg))
+            views.setTextViewText(R.id.widget_preset_name, "✓ ${preset.name}")
+        } else {
+            views.setInt(R.id.widget_preset_item_container, "setBackgroundResource", 0)
+        }
 
         val fillInIntent = Intent().apply {
             action = PresetWidget.ACTION_LOAD_PRESET

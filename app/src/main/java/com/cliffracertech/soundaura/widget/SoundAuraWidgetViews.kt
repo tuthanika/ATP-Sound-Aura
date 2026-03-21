@@ -60,8 +60,15 @@ object SoundAuraWidgetViews {
             views.setViewVisibility(R.id.widget_timer, android.view.View.GONE)
         }
 
+        // CONTAR PLAYLISTS ACTIVAS
+        val application = context.applicationContext as com.cliffracertech.soundaura.SoundAuraApplication
+        val activeCount = runBlocking { 
+            application.database.playlistDao().getPlaylistsForWidget().count { it.isActive }
+        }
+
         val playlistName = if (isPlaying || isPaused) {
-            context.getString(R.string.app_name)
+            if (activeCount > 0) "${context.getString(R.string.app_name)} ($activeCount)"
+            else context.getString(R.string.app_name)
         } else {
             context.getString(R.string.no_active_playlists)
         }
@@ -81,37 +88,17 @@ object SoundAuraWidgetViews {
         val percentage = (masterVolume * 100).toInt()
         views.setTextViewText(R.id.widget_master_volume_text, "$percentage%")
 
-        // Toggles del slider
-        val toggleSliderIntent = Intent(context, SoundAuraWidgetReceiver::class.java).apply {
-            action = SoundAuraWidget.ACTION_TOGGLE_VOLUME_SLIDER
+        // CICLO DE VOLUMEN
+        val cycleVolumeIntent = Intent(context, SoundAuraWidgetReceiver::class.java).apply {
+            action = SoundAuraWidget.ACTION_CYCLE_VOLUME
         }
-        val toggleSliderPendingIntent = PendingIntent.getBroadcast(
-            context, 200, toggleSliderIntent,
+        val cycleVolumePendingIntent = PendingIntent.getBroadcast(
+            context, 200, cycleVolumeIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        views.setOnClickPendingIntent(R.id.widget_master_volume_container, toggleSliderPendingIntent)
+        views.setOnClickPendingIntent(R.id.widget_master_volume_container, cycleVolumePendingIntent)
 
-        // Visibilidad del slider (Ghost Overlay sync)
-        views.setViewVisibility(R.id.widget_ghost_stop_space,
-            if (showStopButton) android.view.View.VISIBLE else android.view.View.GONE)
+        // Visibilidad del slider (Ghost Overlay sync) - SIEMPRE OCULTO
         
-        views.setViewVisibility(R.id.widget_volume_slider_container,
-            if (isSliderVisible) android.view.View.VISIBLE else android.view.View.GONE)
-
-        // Configurar 10 segmentos de volumen (10% a 100%)
-        for (i in 1..10) {
-            val level = i * 0.1f
-            val percentage = (level * 100).toInt()
-            val segmentId = context.resources.getIdentifier("widget_volume_$percentage", "id", context.packageName)
-            
-            if (segmentId != 0) {
-                setupVolumeLevelButton(context, views, segmentId, level)
-                // Los niveles superiores al volumen actual se oscurecen
-                val isDimmed = masterVolume < (level - 0.05f)
-                views.setInt(segmentId, "setBackgroundResource",
-                    if (isDimmed) R.drawable.widget_volume_segment_dim else 0)
-            }
-        }
-
         // Usar notifyAppWidgetViewDataChanged para actualizar la lista
         appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_playlist_list)
     }

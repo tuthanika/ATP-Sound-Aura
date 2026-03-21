@@ -28,6 +28,7 @@ object PresetWidgetViews {
         appWidgetId: Int
     ) {
         val isPlaying = PlayerService.playbackState == PlaybackStateCompat.STATE_PLAYING
+        val isPaused = PlayerService.playbackState == PlaybackStateCompat.STATE_PAUSED
 
         // Actualizar icono de play/pause
         val playPauseIcon = if (isPlaying) R.drawable.ic_widget_pause
@@ -35,11 +36,22 @@ object PresetWidgetViews {
         views.setImageViewResource(R.id.widget_play_pause, playPauseIcon)
 
         // Actualizar texto de estado
-        val statusText = when (PlayerService.playbackState) {
-            PlaybackStateCompat.STATE_PLAYING -> context.getString(R.string.playing)
-            PlaybackStateCompat.STATE_PAUSED -> context.getString(R.string.paused)
-            else -> context.getString(R.string.stopped)
+        // CONTAR PLAYLISTS ACTIVAS
+        val application = context.applicationContext as com.cliffracertech.soundaura.SoundAuraApplication
+        val activeCount = runBlocking { 
+            application.database.playlistDao().getPlaylistsForWidget().count { it.isActive }
         }
+
+        if (activeCount > 0) {
+            views.setViewVisibility(R.id.widget_active_count, android.view.View.VISIBLE)
+            views.setTextViewText(R.id.widget_active_count, "($activeCount)")
+        } else {
+            views.setViewVisibility(R.id.widget_active_count, android.view.View.GONE)
+        }
+
+        val statusText = if (isPlaying) context.getString(R.string.playing)
+                         else if (isPaused) context.getString(R.string.paused)
+                         else context.getString(R.string.stopped)
         views.setTextViewText(R.id.widget_status, statusText)
 
         // Mostrar tiempo restante del timer si existe
@@ -71,36 +83,15 @@ object PresetWidgetViews {
         val percentage = (masterVolume * 100).toInt()
         views.setTextViewText(R.id.widget_master_volume_text, "$percentage%")
 
-        // Toggles del slider
-        val toggleSliderIntent = Intent(context, SoundAuraWidgetReceiver::class.java).apply {
-            action = SoundAuraWidget.ACTION_TOGGLE_VOLUME_SLIDER
+        // CICLO DE VOLUMEN
+        val cycleVolumeIntent = Intent(context, SoundAuraWidgetReceiver::class.java).apply {
+            action = SoundAuraWidget.ACTION_CYCLE_VOLUME
         }
-        val toggleSliderPendingIntent = PendingIntent.getBroadcast(
-            context, 100, toggleSliderIntent,
+        val cycleVolumePendingIntent = PendingIntent.getBroadcast(
+            context, 301, cycleVolumeIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        views.setOnClickPendingIntent(R.id.widget_master_volume_container, toggleSliderPendingIntent)
-
-        // Visibilidad del slider (Ghost Overlay sync)
-        views.setViewVisibility(R.id.widget_ghost_stop_space,
-            if (showStopButton) android.view.View.VISIBLE else android.view.View.GONE)
+        views.setOnClickPendingIntent(R.id.widget_master_volume_container, cycleVolumePendingIntent)
         
-        views.setViewVisibility(R.id.widget_volume_slider_container,
-            if (isSliderVisible) android.view.View.VISIBLE else android.view.View.GONE)
-
-        // Configurar 10 segmentos de volumen (10% a 100%)
-        for (i in 1..10) {
-            val level = i * 0.1f
-            val percentage = (level * 100).toInt()
-            val segmentId = context.resources.getIdentifier("widget_volume_$percentage", "id", context.packageName)
-            
-            if (segmentId != 0) {
-                setupVolumeLevelButton(context, views, segmentId, level)
-                // Los niveles superiores al volumen actual se oscurecen
-                val isDimmed = masterVolume < (level - 0.05f)
-                views.setInt(segmentId, "setBackgroundResource",
-                    if (isDimmed) R.drawable.widget_volume_segment_dim else 0)
-            }
-        }
 
         // Actualizar la lista de presets
         val componentName = ComponentName(context, PresetWidget::class.java)

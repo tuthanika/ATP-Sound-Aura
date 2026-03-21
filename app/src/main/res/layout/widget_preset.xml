@@ -21,10 +21,24 @@
             android:gravity="center_vertical"
             android:padding="4dp">
 
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@mipmap/ic_launcher" />
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center">
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@mipmap/ic_launcher" />
+                <TextView
+                    android:id="@+id/widget_active_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@android:color/white"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/widget_title"
@@ -119,64 +133,4 @@
             android:dividerHeight="4dp" />
 
     </LinearLayout>
-
-    <!-- Ghost Overlay for Perfect Slider Alignment -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="horizontal"
-        android:gravity="center_horizontal"
-        android:padding="8dp"
-        android:clipChildren="false"
-        android:clipToPadding="false">
-        
-        <!-- Mirror Play Button -->
-        <FrameLayout 
-            android:layout_width="40dp" 
-            android:layout_height="40dp" />
-            
-        <!-- Mirror Stop Button (Visibility synced in code) -->
-        <FrameLayout 
-            android:id="@+id/widget_ghost_stop_space"
-            android:layout_width="40dp" 
-            android:layout_height="40dp"
-            android:layout_marginStart="16dp"
-            android:visibility="gone" />
-            
-        <!-- Mirror Volume Icon Column -->
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:clipChildren="false"
-            android:clipToPadding="false"
-            android:orientation="vertical">
-            
-            <!-- Space for Title Row (48dp) + Icon Row (40dp) = 88dp -->
-            <FrameLayout 
-                android:layout_width="40dp" 
-                android:layout_height="88dp" />
-
-            <!-- The Real Slider (Now at root level but aligned by ghosts) -->
-            <LinearLayout
-                android:id="@+id/widget_volume_slider_container"
-                android:layout_width="40dp"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@drawable/widget_volume_slider_bg"
-                android:visibility="gone">
-                <ImageButton android:id="@+id/widget_volume_100" android:layout_width="match_parent" android:layout_height="8dp" android:background="@android:color/transparent" android:scaleType="fitCenter" />
-                <ImageButton android:id="@+id/widget_volume_90" android:layout_width="match_parent" android:layout_height="8dp" android:background="@android:color/transparent" android:scaleType="fitCenter" />
-                <ImageButton android:id="@+id/widget_volume_80" android:layout_width="match_parent" android:layout_height="8dp" android:background="@android:color/transparent" android:scaleType="fitCenter" />
-                <ImageButton android:id="@+id/widget_volume_70" android:layout_width="match_parent" android:layout_height="8dp" android:background="@android:color/transparent" android:scaleType="fitCenter" />
-                <ImageButton android:id="@+id/widget_volume_60" android:layout_width="match_parent" android:layout_height="8dp" android:background="@android:color/transparent" android:scaleType="fitCenter" />
-                <ImageButton android:id="@+id/widget_volume_50" android:layout_width="match_parent" android:layout_height="8dp" android:background="@android:color/transparent" android:scaleType="fitCenter" />
-                <ImageButton android:id="@+id/widget_volume_40" android:layout_width="match_parent" android:layout_height="8dp" android:background="@android:color/transparent" android:scaleType="fitCenter" />
-                <ImageButton android:id="@+id/widget_volume_30" android:layout_width="match_parent" android:layout_height="8dp" android:background="@android:color/transparent" android:scaleType="fitCenter" />
-                <ImageButton android:id="@+id/widget_volume_20" android:layout_width="match_parent" android:layout_height="8dp" android:background="@android:color/transparent" android:scaleType="fitCenter" />
-                <ImageButton android:id="@+id/widget_volume_10" android:layout_width="match_parent" android:layout_height="8dp" android:background="@android:color/transparent" android:scaleType="fitCenter" />
-            </LinearLayout>
-        </LinearLayout>
-    </LinearLayout>
-
 </FrameLayout>
