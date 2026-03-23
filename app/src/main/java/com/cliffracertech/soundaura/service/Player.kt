@@ -103,7 +103,11 @@ class Player(
         exoPlayers.isNotEmpty() && exoPlayers.all { it.playbackState == ExoPlayerState.STATE_ENDED }
 
     fun release() {
-        volumeBoosters.forEach { it.enabled = false }
+        volumeBoosters.forEach { 
+            try { it.enabled = false; it.release() } 
+            catch (e: Exception) { /* already released */ }
+        }
+        volumeBoosters = emptyList()
         exoPlayers.forEach(ExoPlayer::release)
     }
 
@@ -113,7 +117,11 @@ class Player(
     ) {
         targetBoostDb = sourcePlaylist.volumeBoostDb
         hasReportedCompletion = false
-        volumeBoosters.forEach { it.enabled = false }
+        volumeBoosters.forEach {
+            try { it.enabled = false; it.release() }
+            catch (e: Exception) { /* already released */ }
+        }
+        volumeBoosters = emptyList()
         exoPlayers.forEach(ExoPlayer::release)
 
         val tracks = sourcePlaylist.tracks
@@ -192,14 +200,18 @@ class Player(
     }
 
     private fun applyVolumeBoost() {
-        volumeBoosters.forEach { it.enabled = false }
+        volumeBoosters.forEach { 
+            try { it.enabled = false; it.release() }
+            catch (e: Exception) { /* already released */ }
+        }
         volumeBoosters = if (targetBoostDb == 0) emptyList() else exoPlayers.mapNotNull { player ->
             val sessionId = player.audioSessionId
-            if (sessionId == C.AUDIO_SESSION_ID_UNSET) null else
+            if (sessionId == C.AUDIO_SESSION_ID_UNSET) null else try {
                 LoudnessEnhancer(sessionId).apply {
                     setTargetGain(targetBoostDb * 100)
                     enabled = true
                 }
+            } catch (e: Exception) { null }
         }
     }
 }

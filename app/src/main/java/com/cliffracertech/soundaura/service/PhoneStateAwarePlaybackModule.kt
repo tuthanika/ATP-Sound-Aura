@@ -96,12 +96,14 @@ class PhoneStateAwarePlaybackModule(
                 val listener = object : TelephonyCallback(), TelephonyCallback.CallStateListener {
                     override fun onCallStateChanged(state: Int) = onCallStateChange(state)
                 }
+                telephonyCallback = listener
                 telephonyManager.registerTelephonyCallback(context.mainExecutor, listener)
             } else {
                 val listener = object : PhoneStateListener() {
                     override fun onCallStateChanged(state: Int, phoneNumber: String?) =
                         onCallStateChange(state)
                 }
+                phoneStateListener = listener
                 val state = PhoneStateListener.LISTEN_CALL_STATE
                 telephonyManager.listen(listener, state)
             }

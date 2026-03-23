@@ -279,6 +279,7 @@ class PlayerService: LifecycleService() {
         // --- THÊM ĐOẠN NÀY ĐỂ ÉP WIDGET CẬP NHẬT GIAO DIỆN ---
         val widgetUpdateIntent = Intent(this, SoundAuraWidgetReceiver::class.java).apply {
             action = SoundAuraWidget.ACTION_UPDATE_WIDGET
+            addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
         }
         sendBroadcast(widgetUpdateIntent)
 		// ---

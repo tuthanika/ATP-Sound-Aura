@@ -208,7 +208,12 @@ class PlayerNotification(
                 })
             }
         notificationBuilder.setStyle(notificationStyle)
-        service.startForeground(notificationId, updatedNotification())
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            service.startForeground(notificationId, updatedNotification(),
+                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+        } else {
+            service.startForeground(notificationId, updatedNotification())
+        }
     }
 
     fun remove() {
