@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionContext
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -62,6 +63,10 @@ import com.cliffracertech.soundaura.ui.theme.SoundAuraTheme
 import com.cliffracertech.soundaura.ui.tweenDuration
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
@@ -78,12 +83,14 @@ import javax.inject.Inject
     val showingPresetSelector get() = navigationState.mediaControllerState.isExpanded
 
     private val appThemeKey = intPreferencesKey(PrefKeys.appTheme)
-    // The thread must be blocked when reading the first value
-    // of the app theme from the DataStore or else the screen
-    // can flicker between light and dark themes on startup.
-    val appTheme by runBlocking {
-        dataStore.awaitEnumPreferenceState<AppTheme>(appThemeKey, scope)
-    }
+    val appTheme = dataStore.data
+        .map { it[appThemeKey] ?: AppTheme.UseSystem.ordinal }
+        .map { AppTheme.values()[it] }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = null
+        )
 
     private val lastLaunchedVersionCodeKey = intPreferencesKey(PrefKeys.lastLaunchedVersionCode)
     val lastLaunchedVersionCode by dataStore.preferenceState(
@@ -102,7 +109,7 @@ import javax.inject.Inject
             playbackState.toggleIsPlaying()
             true
         } KeyEvent.KEYCODE_MEDIA_PLAY -> {
-            if (playbackState.isPlaying) {
+            if (!playbackState.isPlaying) {
                 playbackState.toggleIsPlaying()
                 true
             } else false
@@ -128,15 +135,22 @@ val LocalWindowSizeClass = compositionLocalOf {
 class MainActivity : ComponentActivity() {
     private val viewModel: MainActivityViewModel by viewModels()
 
-    @Suppress("OVERRIDE_DEPRECATION")
-    override fun onBackPressed() {
-        @Suppress("DEPRECATION")
-        if (!viewModel.onBackButtonClick())
-            super.onBackPressed()
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+        // --- THÊM ĐOẠN NÀY ĐỂ AURA CÓ QUYỀN GLOBAL NHƯ ROLIFY ---
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.READ_MEDIA_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(android.Manifest.permission.READ_MEDIA_AUDIO), 100)
+            }
+        } else {
+            if (checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE), 100)
+            }
+        }
+        splashScreen.setKeepOnScreenCondition {
+            viewModel.appTheme.value == null
+        }
 
         setContentWithTheme {
             BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -146,6 +160,11 @@ class MainActivity : ComponentActivity() {
                     viewModel.messages.collect { message ->
                         message.showAsSnackbar(this@MainActivity, snackbarHostState)
                     }
+                }
+
+                androidx.activity.compose.BackHandler(enabled = true) {
+                    if (!viewModel.onBackButtonClick())
+                        finish()
                 }
 
                 NewVersionDialogShower(
@@ -191,7 +210,7 @@ class MainActivity : ComponentActivity() {
         parent: CompositionContext? = null,
         content: @Composable () -> Unit
     ) = setContent(parent) {
-        val themePreference = viewModel.appTheme
+        val themePreference by viewModel.appTheme.collectAsState()
         val systemInDarkTheme = isSystemInDarkTheme()
         val useDarkTheme by remember(themePreference, systemInDarkTheme) {
             derivedStateOf {

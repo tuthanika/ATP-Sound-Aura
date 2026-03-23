@@ -3,6 +3,8 @@
  * the project's root directory to see the full license. */
 package com.cliffracertech.soundaura.model
 
+import android.provider.MediaStore
+import android.content.ContentUris
 import android.content.Context
 import android.net.Uri
 import androidx.datastore.core.DataStore
@@ -13,6 +15,7 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.cliffracertech.soundaura.Dispatcher
+import com.cliffracertech.soundaura.toAbsolutePathOrNull
 import com.cliffracertech.soundaura.model.database.*
 import com.cliffracertech.soundaura.settings.PrefKeys
 import com.cliffracertech.soundaura.model.UriPermissionHandler
@@ -111,15 +114,103 @@ class DataBackupUseCase @Inject constructor(
             database.clearAllTables()
 
             // Restore DB
-            playlistDao.insertTracks(appData.tracks.map { 
-                Track(Uri.parse(it.uri), it.hasError, it.loopEnabled) 
-            })
+            val uriMap = mutableMapOf<String, Uri>()
+            val tracks = appData.tracks.map { track ->
+                val uriString = track.uri
+                var finalUri = Uri.parse(uriString)
+                var isReadable = false
+
+                // 1. Thử xem URI cũ còn sống không
+                try {
+                    context.contentResolver.openInputStream(finalUri)?.close()
+                    isReadable = true
+                } catch (e: Exception) {}
+
+                // 2. BỘ MÁY DỊCH NGƯỢC AUTO-RELINK (Mô phỏng sức mạnh của Rolify)
+                if (!isReadable && uriString.startsWith("content://com.android.externalstorage.documents")) {
+                    try {
+                        val decodedUrl = Uri.decode(uriString)
+                        val pathComponent = decodedUrl.substringAfterLast("/document/", "")
+                        
+                        if (pathComponent.isNotEmpty() && pathComponent.contains(":")) {
+                            val split = pathComponent.split(":", limit = 2)
+                            val volume = split[0]
+                            val filePath = split[1]
+                            val fileName = filePath.substringAfterLast("/")
+
+                            // Tạo đường dẫn file vật lý (POSIX)
+                            val absolutePath = if (volume.equals("primary", ignoreCase = true)) {
+                                "/storage/emulated/0/$filePath"
+                            } else {
+                                "/storage/$volume/$filePath"
+                            }
+
+                            // Cứu cánh 1: Dùng quyền Global đọc thẳng File vật lý
+                            val file = java.io.File(absolutePath)
+                            if (file.exists() && file.canRead()) {
+                                finalUri = Uri.fromFile(file)
+                                isReadable = true
+                            } 
+                            // Cứu cánh 2: Dùng MediaStore.Files tóm cổ file qua Tên và Đường dẫn
+                            else {
+                                val projection = arrayOf(MediaStore.Files.FileColumns._ID, MediaStore.Files.FileColumns.DATA)
+                                val urisToQuery = mutableListOf(MediaStore.Files.getContentUri("external"))
+                                
+                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                                    MediaStore.getExternalVolumeNames(context).forEach {
+                                        urisToQuery.add(MediaStore.Files.getContentUri(it))
+                                    }
+                                }
+
+                                for (queryUri in urisToQuery) {
+                                    context.contentResolver.query(
+                                        queryUri, projection,
+                                        "${MediaStore.Files.FileColumns.DISPLAY_NAME} = ?", arrayOf(fileName), null
+                                    )?.use { cursor ->
+                                        val idCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID)
+                                        val dataCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATA)
+                                        
+                                        // Quét tìm file có đường dẫn trùng khớp tuyệt đối
+                                        while (cursor.moveToNext()) {
+                                            val data = cursor.getString(dataCol)
+                                            if (data == absolutePath) {
+                                                val id = cursor.getLong(idCol)
+                                                finalUri = ContentUris.withAppendedId(queryUri, id)
+                                                isReadable = true
+                                                break
+                                            }
+                                        }
+                                        // Nếu không khớp đường dẫn, lấy tạm file đầu tiên trùng tên
+                                        if (!isReadable && cursor.moveToFirst()) {
+                                            val id = cursor.getLong(idCol)
+                                            finalUri = ContentUris.withAppendedId(queryUri, id)
+                                            isReadable = true
+                                        }
+                                    }
+                                    if (isReadable) break
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {}
+                }
+
+                uriMap[track.uri] = finalUri
+                
+                // Mặc định nạp thẳng đường dẫn an toàn mới vào hệ thống
+                Track(finalUri, hasError = !isReadable, track.loopEnabled)
+            }
+            playlistDao.insertTracks(tracks)
+            
+            // Cố gắng xin/phục hồi quyền truy cập (nếu hệ thống cho phép)
+            permissionHandler.acquirePermissionsFor(tracks.map { it.uri })
+
             playlistDao.insertPlaylists(appData.playlists.map {
                 Playlist(it.id, it.name, it.shuffle, it.playSequentially, 
                          it.isActive, it.volume, it.volumeBoostDb)
             })
             playlistDao.insertPlaylistTracks(appData.playlistTracks.map {
-                PlaylistTrack(it.playlistId, it.playlistOrder, Uri.parse(it.trackUri), it.volume)
+                val finalUri = uriMap[it.trackUri] ?: Uri.parse(it.trackUri)
+                PlaylistTrack(it.playlistId, it.playlistOrder, finalUri, it.volume)
             })
             presetDao.insertPresets(appData.presets.map { Preset(it.name) })
             presetDao.insertPresetPlaylists(appData.presetPlaylists.map {

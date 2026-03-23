@@ -3,6 +3,7 @@
  * the project's root directory to see the full license. */
 package com.cliffracertech.soundaura
 
+import android.net.Uri
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -276,3 +277,24 @@ fun WindowInsets.getEnd(
 ) = rememberWindowInsetsPaddingValues(
     insets, additionalPadding, additionalPadding,
     additionalPadding, additionalPadding)
+
+/** Attempt to convert the receiver String (representing a Uri) into an
+ * absolute file path. This will only work if the Uri's authority is
+ * com.android.externalstorage.documents. If the conversion is successful,
+ * the absolute path will be returned, or null otherwise. */
+fun String.toAbsolutePathOrNull(): String? {
+    if (!startsWith("content://com.android.externalstorage.documents"))
+        return null
+    return try {
+        val decoded = android.net.Uri.decode(this)
+        val documentId = decoded.substringAfterLast("/document/", "")
+        if (documentId.isEmpty() || !documentId.contains(":"))
+            return null
+        val parts = documentId.split(":", limit = 2)
+        val volumeId = parts[0]
+        val path = parts[1]
+        if (volumeId.equals("primary", ignoreCase = true))
+            "/storage/emulated/0/$path"
+        else "/storage/$volumeId/$path"
+    } catch (e: Exception) { null }
+}

@@ -206,16 +206,12 @@ class SettingsViewModel @Inject constructor(
     var showingPlayInBackgroundExplanation by mutableStateOf(false)
         private set
 
-    // This value should always be up to date due to granting or revoking
-    // permissions outside of the app causing an app restart. If the user
-    // approves the notification permission inside the app, the value
-    // must be changed to true manually.
-    private var hasNotificationPermission by mutableStateOf(
+    private fun hasNotificationPermission() =
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU)
             true
         else ContextCompat.checkSelfPermission(
             context, Manifest.permission.POST_NOTIFICATIONS
-        ) == PackageManager.PERMISSION_GRANTED)
+        ) == PackageManager.PERMISSION_GRANTED
 
     private val notificationPermissionRequested by
         dataStore.preferenceState(notificationPermissionRequestedKey, false, scope)
@@ -237,15 +233,15 @@ class SettingsViewModel @Inject constructor(
 
     fun onNotificationPermissionDialogConfirm(permissionGranted: Boolean) {
         onNotificationPermissionDialogDismiss()
-        if (permissionGranted)
-            hasNotificationPermission = true
-        togglePlayInBackground()
+        if (permissionGranted) {
+            togglePlayInBackground()
+        }
     }
 
     fun onPlayInBackgroundSwitchClick() {
         if (!playInBackground &&
             !notificationPermissionRequested &&
-            !hasNotificationPermission
+            !hasNotificationPermission()
         ) {
             scope.launchIO {
                 dataStore.edit(notificationPermissionRequestedKey, true)
@@ -268,14 +264,10 @@ class SettingsViewModel @Inject constructor(
 
     val autoPauseDuringCallSettingVisible by ::playInBackground
 
-    // This value should always be up to date due to granting or revoking
-    // permissions outside of the app causing an app restart. If the user
-    // approves the read phone state permission inside the app, the value
-    // must be changed to true manually.
-    private var hasReadPhoneStatePermission by mutableStateOf(
+    private fun hasReadPhoneStatePermission() =
         ContextCompat.checkSelfPermission(
             context, Manifest.permission.READ_PHONE_STATE
-        ) == PackageManager.PERMISSION_GRANTED)
+        ) == PackageManager.PERMISSION_GRANTED
 
     private val autoPauseDuringCallPreference by
         dataStore.preferenceState(
@@ -285,7 +277,7 @@ class SettingsViewModel @Inject constructor(
 
     val autoPauseDuringCall get() =
         autoPauseDuringCallPreference &&
-        hasReadPhoneStatePermission &&
+        hasReadPhoneStatePermission() &&
         autoPauseDuringCallSettingVisible
 
     var showingPhoneStatePermissionDialog by mutableStateOf(false)
@@ -294,7 +286,7 @@ class SettingsViewModel @Inject constructor(
     fun onAutoPauseDuringCallClick() {
         if (!playInBackground) return
 
-        if (!autoPauseDuringCall && !hasReadPhoneStatePermission)
+        if (!autoPauseDuringCall && !hasReadPhoneStatePermission())
             showingPhoneStatePermissionDialog = true
         else dataStore.edit(autoPauseDuringCallKey, !autoPauseDuringCall, scope)
     }
@@ -306,7 +298,6 @@ class SettingsViewModel @Inject constructor(
     fun onPhoneStatePermissionDialogConfirm(permissionGranted: Boolean) {
         if (permissionGranted) {
             dataStore.edit(autoPauseDuringCallKey, true, scope)
-            hasReadPhoneStatePermission = true
         }
         onPhoneStatePermissionDialogDismiss()
     }
@@ -332,9 +323,12 @@ class SettingsViewModel @Inject constructor(
     fun onBackupRequest(uri: Uri) {
         scope.launchIO {
             try {
-                context.contentResolver.openOutputStream(uri)?.use {
-                    dataBackupUseCase.exportAppData(it)
+                val stream = context.contentResolver.openOutputStream(uri)
+                if (stream == null) {
+                    message = context.getString(R.string.backup_error, "Cannot access file")
+                    return@launchIO
                 }
+                stream.use { dataBackupUseCase.exportAppData(it) }
                 message = context.getString(R.string.backup_success)
             } catch (e: Exception) {
                 message = context.getString(R.string.backup_error, e.message ?: "")
@@ -356,7 +350,12 @@ class SettingsViewModel @Inject constructor(
         showingRestoreConfirmation = false
         pendingRestoreUri = null
         scope.launchIO {
-            context.contentResolver.openInputStream(uri)?.use {
+            val stream = context.contentResolver.openInputStream(uri)
+            if (stream == null) {
+                message = context.getString(R.string.restore_error, "Cannot access file")
+                return@launchIO
+            }
+            stream.use {
                 val result = dataBackupUseCase.importAppData(it)
                 message = if (result.isSuccess)
                     context.getString(R.string.restore_success)

@@ -60,7 +60,8 @@ interface PlaybackState {
 class PlayerServicePlaybackState(
     @ApplicationContext private val context: Context
 ): PlaybackState {
-    override var isPlaying by mutableStateOf(PlayerService.binder?.isPlaying ?: false)
+    override var isPlaying by mutableStateOf(
+        PlayerService.playbackState == android.support.v4.media.session.PlaybackStateCompat.STATE_PLAYING)
         private set
 
     private var _masterVolume by mutableStateOf(1f)
@@ -68,9 +69,10 @@ class PlayerServicePlaybackState(
 
     init {
         val scope = ProcessLifecycleOwner.get().lifecycleScope
-        PlayerService.addPlaybackChangeListener {
-            isPlaying = PlayerService.binder?.isPlaying ?: false
-        }
+        PlayerService.playbackStateFlow
+            .onEach { state ->
+                isPlaying = state == android.support.v4.media.session.PlaybackStateCompat.STATE_PLAYING
+            }.launchIn(scope)
         val masterVolumeKey = floatPreferencesKey(PrefKeys.masterVolume)
         context.dataStore.preferenceFlow(masterVolumeKey, 1f)
             .onEach { _masterVolume = it }

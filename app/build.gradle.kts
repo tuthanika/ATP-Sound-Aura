@@ -101,6 +101,7 @@ dependencies {
     implementation("com.mikepenz:aboutlibraries-core:13.1.0")
     implementation("com.mikepenz:aboutlibraries-compose:13.1.0")
     implementation("androidx.compose.material3:material3-window-size-class:1.4.0")
+    implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
     implementation("sh.calvin.reorderable:reorderable:3.0.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")

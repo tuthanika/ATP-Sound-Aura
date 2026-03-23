@@ -100,7 +100,7 @@ private const val librarySelectWithFilter =
         uris: List<Uri>,
         newUris: List<Uri>? = null,
     ) {
-        assert(names.size == uris.size)
+        require(names.size == uris.size) { "Names and URIs lists must have the same size" }
         insertTracks((newUris ?: uris).map(::Track))
         val playlistTracks = List(names.size) {
             insertPlaylist(names[it], playSequentially = false)
@@ -203,6 +203,7 @@ private const val librarySelectWithFilter =
     protected abstract suspend fun filterNewUris(query: SupportSQLiteQuery): List<Uri>
 
     suspend fun filterNewUris(tracks: List<Uri>): List<Uri> {
+        if (tracks.isEmpty()) return emptyList()
         // The following query requires parentheses around each argument. This
         // is not supported by Room, so the query must be made manually.
         val query = StringBuilder()

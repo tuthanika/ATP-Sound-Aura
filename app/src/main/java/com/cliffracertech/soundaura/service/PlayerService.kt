@@ -37,14 +37,17 @@ import com.cliffracertech.soundaura.service.PlayerService.Companion.PlaybackChan
 import com.cliffracertech.soundaura.service.PlayerService.Companion.addPlaybackChangeListener
 import com.cliffracertech.soundaura.settings.PrefKeys
 import com.cliffracertech.soundaura.settings.dataStore
+import com.cliffracertech.soundaura.widget.SoundAuraWidget
+import com.cliffracertech.soundaura.widget.SoundAuraWidgetReceiver
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -155,9 +158,6 @@ class PlayerService: LifecycleService() {
 
         val playInBackgroundKey = booleanPreferencesKey(PrefKeys.playInBackground)
         val playInBackgroundFlow = dataStore.preferenceFlow(playInBackgroundKey, false)
-        // playInBackground needs to be set before playback starts so that
-        // PlayerService knows whether it needs to request audio focus or not.
-        val playInBackgroundFirstValue = runBlocking { playInBackgroundFlow.first() }
 
         notification = PlayerNotification(
             service = this,
@@ -167,8 +167,13 @@ class PlayerService: LifecycleService() {
             cancelTimerIntent = setTimerIntent(this, null),
             playbackState = playbackState,
             stopTime = stopTime,
-            useMediaSession = !playInBackgroundFirstValue)
-        playInBackground = playInBackgroundFirstValue
+            useMediaSession = true)
+
+        lifecycleScope.launch {
+            val playInBackgroundFirstValue = playInBackgroundFlow.first()
+            playInBackground = playInBackgroundFirstValue
+            notification.useMediaSession = !playInBackgroundFirstValue
+        }
 
         repeatWhenStarted {
             playInBackgroundFlow
@@ -208,10 +213,11 @@ class PlayerService: LifecycleService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             setPlaybackAction -> {
-                val targetState = intent.extras?.getInt(setPlaybackAction)
-                targetState?.let(::setPlaybackState)
+                val targetState = intent.getIntExtra(setPlaybackAction, -1)
+                if (targetState != -1) setPlaybackState(targetState)
             } setTimerAction -> {
-                setStopTime(intent.extras?.getLong(setTimerAction))
+                val stopTime = intent.getLongExtra(setTimerAction, 0L)
+                setStopTime(if (stopTime == 0L) null else stopTime)
             }
         }
         return super.onStartCommand(intent, flags, startId)
@@ -269,6 +275,14 @@ class PlayerService: LifecycleService() {
             unpauseLocks.clear()
         playbackState = newState
         updateNotification()
+		
+        // --- THÊM ĐOẠN NÀY ĐỂ ÉP WIDGET CẬP NHẬT GIAO DIỆN ---
+        val widgetUpdateIntent = Intent(this, SoundAuraWidgetReceiver::class.java).apply {
+            action = SoundAuraWidget.ACTION_UPDATE_WIDGET
+        }
+        sendBroadcast(widgetUpdateIntent)
+		// ---
+		
         if (newState != STATE_STOPPED) when {
             isPlaying ->          playerMap.play()
             stopInsteadOfPause -> playerMap.stop()
@@ -329,11 +343,9 @@ class PlayerService: LifecycleService() {
      * automatically paused due to there being no active tracks to play. */
     private fun showAutoPausePlaybackExplanation() {
         val stringResId = R.string.player_no_active_playlists_warning_message
-        // A RuntimeException can be thrown here if the Toast is made outside
-        // of the UI thread. Because this should only occur during testing and
-        // the message is non-critical, we ignore it.
-        try { Toast.makeText(this, stringResId, Toast.LENGTH_LONG).show() }
-        catch(e: RuntimeException) {}
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+            Toast.makeText(this@PlayerService, stringResId, Toast.LENGTH_LONG).show()
+        }
     }
 
     fun setPlaylistVolume(playlistId: Long, volume: Float) =
@@ -447,7 +459,14 @@ class PlayerService: LifecycleService() {
         fun interface PlaybackChangeListener {
             fun onPlaybackStateChange(newState: Int)
         }
+        private val _playbackState = MutableStateFlow(STATE_STOPPED)
+        val playbackStateFlow = _playbackState.asStateFlow()
+
         private val playbackChangeListeners = mutableListOf<PlaybackChangeListener>()
+
+        private fun notifyListeners(newState: Int) {
+            playbackChangeListeners.forEach { it.onPlaybackStateChange(newState) }
+        }
 
         /** Register the [listener] so that future changes in playback
          * state will be sent to it, sending the current playback state
@@ -467,9 +486,10 @@ class PlayerService: LifecycleService() {
 
         var playbackState = STATE_STOPPED
             private set(value) {
+                if (field == value) return
                 field = value
-                for (listener in playbackChangeListeners)
-                    listener.onPlaybackStateChange(value)
+                _playbackState.value = value
+                notifyListeners(value)
             }
 
         var binder by mutableStateOf<Binder?>(null)
