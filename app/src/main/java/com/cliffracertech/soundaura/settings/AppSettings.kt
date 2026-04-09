@@ -120,37 +120,6 @@ import com.cliffracertech.soundaura.dialog.SoundAuraDialog
     }
 }
 
-@Composable private fun AutoPauseDuringCallSetting(
-    viewModel: SettingsViewModel,
-    modifier: Modifier = Modifier,
-) = AnimatedVisibility(
-    visible = viewModel.autoPauseDuringCallSettingVisible,
-    enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
-    exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top)
-) {
-    Column {
-        HorizontalDivider(modifier)
-        Setting(
-            title = stringResource(R.string.auto_pause_during_calls_setting_title),
-            modifier = modifier,
-            subtitle = stringResource(R.string.auto_pause_during_calls_setting_subtitle),
-            onClick = viewModel::onAutoPauseDuringCallClick
-        ) {
-            Switch(checked = viewModel.autoPauseDuringCall,
-                onCheckedChange = remember {{ viewModel.onAutoPauseDuringCallClick() }})
-        }
-        if (viewModel.showingPhoneStatePermissionDialog) {
-            val context = LocalContext.current
-            val showExplanation = ContextCompat.checkSelfPermission(
-                    context, Manifest.permission.READ_PHONE_STATE
-                ) == PackageManager.PERMISSION_DENIED
-            PhoneStatePermissionDialog(
-                showExplanationFirst = showExplanation,
-                onDismissRequest = viewModel::onPhoneStatePermissionDialogDismiss,
-                onPermissionResult = viewModel::onPhoneStatePermissionDialogConfirm)
-        }
-    }
-}
 
 @Composable private fun PlaybackSettingsCategory() =
     SettingCategory(stringResource(R.string.playback)) { paddingModifier ->
@@ -161,7 +130,6 @@ import com.cliffracertech.soundaura.dialog.SoundAuraDialog
             viewModel = viewModel,
             modifier = paddingModifier,
             onTileTutorialShowRequest = { showingTileTutorialDialog = true })
-        AutoPauseDuringCallSetting(viewModel, paddingModifier)
 
         HorizontalDivider(paddingModifier)
         EnumDialogSetting(

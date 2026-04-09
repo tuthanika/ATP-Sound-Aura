@@ -173,40 +173,6 @@ import com.mikepenz.aboutlibraries.ui.compose.libraryColors
     }
 }
 
-/**
- * Launch a dialog to request the READ_PHONE_STATE permission.
- * @param modifier The [Modifier] to use for the dialog window.
- * @param showExplanationFirst Whether or not a dialog box explaining
- *     why the permission is needed will be shown.
- * @param onDismissRequest The callback that will be invoked if the
- *     explanatory dialog is dismissed.
- * @param onPermissionResult The callback that will be invoked when
- *     the user grants or rejects the permission. The Boolean parameter
- *     will be true if the permission was granted, or false otherwise.
- */
-@Composable fun PhoneStatePermissionDialog(
-    modifier: Modifier = Modifier,
-    showExplanationFirst: Boolean,
-    onDismissRequest: () -> Unit,
-    onPermissionResult: (Boolean) -> Unit
-) {
-    var explanationDismissed by rememberSaveable { mutableStateOf(false) }
-    if (showExplanationFirst && !explanationDismissed)
-        SoundAuraDialog(
-            modifier = modifier,
-            title = stringResource(R.string.auto_pause_during_calls_setting_title),
-            text = stringResource(R.string.request_phone_state_permission_explanation),
-            onDismissRequest = onDismissRequest,
-            onConfirm = { explanationDismissed = true })
-    if (!showExplanationFirst || explanationDismissed) {
-        val launcher = rememberLauncherForActivityResult(
-            ActivityResultContracts.RequestPermission(),
-            onResult = onPermissionResult)
-        LaunchedEffect(Unit) {
-            launcher.launch(Manifest.permission.READ_PHONE_STATE)
-        }
-    }
-}
 
 /** Compose a button that will prompt the user to add the app's quick settings
  * tile to their status bar when clicked. RequestAddTileServiceButton is non-

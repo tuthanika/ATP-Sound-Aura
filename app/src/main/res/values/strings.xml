@@ -30,12 +30,7 @@
 
     <!-- Library view -->
     <string name="empty_library_message">Your library is empty.
-
-Tap the add button below to add
-        local files to your library.
-
-Tap the plus symbol next to an added track or playlist to
-        make it part of the sound mix when playback is started.</string>
+        \n\nTap the button below to add your favorite sounds and start creating your unique ambiance.</string>
     <string name="no_search_results_message">No tracks/playlists match the query.</string>
     <string name="set_playlist_active_description">Add %1$s to sound mix</string>
     <string name="set_playlist_inactive_description">Remove %1$s from sound mix</string>
@@ -244,9 +239,7 @@ Tap the plus symbol next to an added track or playlist to
         Make playback ignore hardware media buttons (e.g. a headset
         play/pause button) unless the app is in the foreground</string>
     <string name="play_in_background_explanation_bullet_4">
-        Prevent playback from auto-pausing during calls, unless the Auto-pause during
-        calls setting is enabled and the read phone state permission is granted
-    </string>
+        Automatically pause and resume during phone calls or other system events</string>
 
     <!-- Notification permission -->
     <string name="request_notification_permission_title">Notification permission required</string>

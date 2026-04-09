@@ -226,7 +226,6 @@ class DataBackupUseCase @Inject constructor(
                         PrefKeys.showActivePlaylistsFirst,
                         PrefKeys.playInBackground,
                         PrefKeys.notificationPermissionRequested,
-                        PrefKeys.autoPauseDuringCalls,
                         PrefKeys.stopInsteadOfPause,
                         PrefKeys.playButtonLongClickHintShown,
                         PrefKeys.isVolumeSliderVisible -> {

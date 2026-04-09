@@ -45,6 +45,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -185,7 +187,8 @@ class ActivePresetViewState(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(Icons.Default.VolumeUp, null)
+            Icon(Icons.Default.VolumeUp,
+                 contentDescription = stringResource(R.string.master_volume_label) + " ($percentage%)")
             Text(text = "$percentage%",
                  style = MaterialTheme.typography.caption,
                  maxLines = 1, softWrap = false)
@@ -204,6 +207,7 @@ class ActivePresetViewState(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Box(modifier = Modifier.size(32.dp, 120.dp), contentAlignment = Alignment.Center) {
+                        val sliderDescription = stringResource(R.string.master_volume_label) + " ($percentage%)"
                         Slider(
                             value = masterVolume,
                             onValueChange = onMasterVolumeChange,
@@ -212,7 +216,8 @@ class ActivePresetViewState(
                                     rotationZ = 270f
                                     transformOrigin = TransformOrigin.Center
                                 }
-                                .requiredWidth(120.dp))
+                                .requiredWidth(120.dp)
+                                .semantics { contentDescription = sliderDescription })
                     }
                     Text(text = "$percentage%",
                          style = MaterialTheme.typography.subtitle2,

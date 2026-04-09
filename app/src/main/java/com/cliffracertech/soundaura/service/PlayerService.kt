@@ -6,6 +6,9 @@ package com.cliffracertech.soundaura.service
 import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
+import android.media.AudioManager.AUDIOFOCUS_LOSS
+import android.media.AudioManager.AUDIOFOCUS_LOSS_TRANSIENT
+import android.media.AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK
 import android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED
 import android.net.Uri
 import android.support.v4.media.session.PlaybackStateCompat
@@ -98,10 +101,9 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class PlayerService: LifecycleService() {
     private val unpauseLocks = mutableSetOf<String>()
-    private val playbackModules = mutableListOf(
+    private val playbackModules = mutableListOf<PlaybackModule>(
         OnAudioDeviceChangePlaybackModule(
-            unpauseLocks, ::autoPauseIf, ::setPlaybackState),
-        PhoneStateAwarePlaybackModule(::autoPauseIf))
+            unpauseLocks, ::autoPauseIf, ::setPlaybackState))
     @Inject lateinit var playlistDao: PlaylistDao
     private lateinit var audioManager: AudioManager
     private lateinit var notification: PlayerNotification

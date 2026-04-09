@@ -145,14 +145,28 @@ fun Modifier.minTouchTargetSize() =
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current,
 ) {
-    Text(text,
-        modifier = modifier.basicMarquee(
+    val marqueeModifier = modifier
+        .then(if (maxWidth != null) Modifier.width(maxWidth) else Modifier)
+        .basicMarquee(
             iterations = Int.MAX_VALUE,
-            initialDelayMillis = 2000,
-            repeatDelayMillis = 2000),
-        color, fontSize, fontStyle, fontWeight, fontFamily, letterSpacing,
-        textDecoration, textAlign, lineHeight, overflow,
-        softWrap = false, maxLines = 1, onTextLayout = onTextLayout,
+            initialDelayMillis = 1500,
+            repeatDelayMillis = 2000)
+
+    Text(text,
+        modifier = marqueeModifier,
+        color = color,
+        fontSize = fontSize,
+        fontStyle = fontStyle,
+        fontWeight = fontWeight,
+        fontFamily = fontFamily,
+        letterSpacing = letterSpacing,
+        textDecoration = textDecoration,
+        textAlign = textAlign,
+        lineHeight = lineHeight,
+        overflow = overflow,
+        softWrap = false,
+        maxLines = 1,
+        onTextLayout = onTextLayout,
         style = style)
 }
 

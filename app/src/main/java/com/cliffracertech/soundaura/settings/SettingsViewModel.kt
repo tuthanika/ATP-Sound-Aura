@@ -84,24 +84,14 @@ object PrefKeys {
      * - The app's playback will not respond to hardware media keys unless they
      *   are pressed while the app is in the foreground
      * - The app's foreground service notification will appear as a regular notification
-     * - Playback will not automatically pause during phone calls unless the
-     *   read phone state permission is granted and the preference autoPauseDuringCalls
-     *   is true (due to the app having no other way to determine if a phone call
-     *   is ongoing)
+     * - Playback will continue during phone calls unless the system's focus
+     *   management or the user manually pauses it.
      */
     const val playInBackground = "play_in_background"
 
     /** A boolean value that indicates whether the user has been asked for notification
      * permission. Permission should only be asked once, to prevent annoying the user. */
     const val notificationPermissionRequested = "notification_permission_requested"
-
-    /** A boolean value that indicates whether playback should automatically
-     * pause when a phone call is ongoing. This setting will have no effect if
-     * the playInBackground setting is false because the app will automatically
-     * pause playback during calls due to losing audio focus. This setting also
-     * has no effect if the app has not been granted the read phone state
-     * permission, and should be prevented from being true in that case. */
-    const val autoPauseDuringCalls = "auto_pause_during_calls"
 
     /** An int value that represents the ordinal of the desired [OnZeroVolumeAudioDeviceBehavior]
      * enum value to use as the application's response to an audio device change
@@ -189,7 +179,6 @@ class SettingsViewModel @Inject constructor(
     private val playInBackgroundKey = booleanPreferencesKey(PrefKeys.playInBackground)
     private val notificationPermissionRequestedKey =
         booleanPreferencesKey(PrefKeys.notificationPermissionRequested)
-    private val autoPauseDuringCallKey = booleanPreferencesKey(PrefKeys.autoPauseDuringCalls)
     private val onZeroVolumeAudioDeviceBehaviorKey =
         intPreferencesKey(PrefKeys.onZeroVolumeAudioDeviceBehavior)
     private val stopInsteadOfPauseKey = booleanPreferencesKey(PrefKeys.stopInsteadOfPause)
@@ -254,52 +243,9 @@ class SettingsViewModel @Inject constructor(
     private fun togglePlayInBackground() {
         scope.launch {
             dataStore.edit {
-                val newValue = !playInBackground
-                if (!newValue)
-                    it[autoPauseDuringCallKey] = false
-                it[playInBackgroundKey] = newValue
+                it[playInBackgroundKey] = !playInBackground
             }
         }
-    }
-
-    val autoPauseDuringCallSettingVisible by ::playInBackground
-
-    private fun hasReadPhoneStatePermission() =
-        ContextCompat.checkSelfPermission(
-            context, Manifest.permission.READ_PHONE_STATE
-        ) == PackageManager.PERMISSION_GRANTED
-
-    private val autoPauseDuringCallPreference by
-        dataStore.preferenceState(
-            key = autoPauseDuringCallKey,
-            initialValue = false,
-            scope = scope)
-
-    val autoPauseDuringCall get() =
-        autoPauseDuringCallPreference &&
-        hasReadPhoneStatePermission() &&
-        autoPauseDuringCallSettingVisible
-
-    var showingPhoneStatePermissionDialog by mutableStateOf(false)
-        private set
-
-    fun onAutoPauseDuringCallClick() {
-        if (!playInBackground) return
-
-        if (!autoPauseDuringCall && !hasReadPhoneStatePermission())
-            showingPhoneStatePermissionDialog = true
-        else dataStore.edit(autoPauseDuringCallKey, !autoPauseDuringCall, scope)
-    }
-
-    fun onPhoneStatePermissionDialogDismiss() {
-        showingPhoneStatePermissionDialog = false
-    }
-
-    fun onPhoneStatePermissionDialogConfirm(permissionGranted: Boolean) {
-        if (permissionGranted) {
-            dataStore.edit(autoPauseDuringCallKey, true, scope)
-        }
-        onPhoneStatePermissionDialogDismiss()
     }
 
     val onZeroVolumeAudioDeviceBehavior by

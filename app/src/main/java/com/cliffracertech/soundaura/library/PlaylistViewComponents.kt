@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -64,9 +65,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.Slider
 import androidx.compose.material.TextButton
@@ -300,7 +304,7 @@ class MutablePlaylist(tracks: List<com.cliffracertech.soundaura.model.database.T
             contentAlignment = Alignment.Center
         ) {
             Icon(imageVector = Icons.Default.Add,
-                contentDescription = null,
+                contentDescription = stringResource(R.string.playlist_add_tracks_button_description),
                 modifier = Modifier.padding(6.dp),
                 tint = MaterialTheme.colors.onPrimary)
         }
@@ -420,46 +424,68 @@ class MutablePlaylist(tracks: List<com.cliffracertech.soundaura.model.database.T
                             }
                         }
 
-                        TextButton(
-                            onClick = { showingVolumeSlider = !showingVolumeSlider },
-                            modifier = Modifier.size(40.dp),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            val volumeText = (track.volume * 100).roundToInt().toString()
-                            Text(
-                                text = volumeText,
-                                style = MaterialTheme.typography.body2.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colors.primaryVariant
-                            )
-                        }
-
-                        if (showingVolumeSlider) {
-                            Popup(
-                                alignment = Alignment.BottomCenter,
-                                onDismissRequest = { showingVolumeSlider = false }
+                        val volumeToggleDescription = stringResource(R.string.playlist_track_volume_description, name)
+                        Box(contentAlignment = Alignment.Center) {
+                            TextButton(
+                                onClick = { showingVolumeSlider = !showingVolumeSlider },
+                                modifier = Modifier.size(40.dp).semantics {
+                                    contentDescription = volumeToggleDescription
+                                },
+                                contentPadding = PaddingValues(0.dp)
                             ) {
-                                Surface(
-                                    modifier = Modifier.padding(bottom = 40.dp),
-                                    shape = MaterialTheme.shapes.small,
-                                    elevation = 8.dp
+                                val volumeText = (track.volume * 100).roundToInt().toString()
+                                Text(
+                                    text = volumeText,
+                                    style = MaterialTheme.typography.body2.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colors.primaryVariant
+                                )
+                            }
+
+                            if (showingVolumeSlider) {
+                                Popup(
+                                    alignment = Alignment.TopCenter,
+                                    offset = IntOffset(0, -60),
+                                    onDismissRequest = { showingVolumeSlider = false }
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .width(48.dp)
-                                            .height(140.dp),
-                                        contentAlignment = Alignment.Center
+                                    Surface(
+                                        shape = MaterialTheme.shapes.small,
+                                        elevation = 8.dp,
+                                        color = MaterialTheme.colors.surface
                                     ) {
-                                        Slider(
-                                            value = track.volume,
-                                            onValueChange = { mutablePlaylist.setTrackVolume(index, it) },
+                                        Column(
                                             modifier = Modifier
-                                                .graphicsLayer {
-                                                    rotationZ = 270f
-                                                    transformOrigin = TransformOrigin(0.5f, 0.5f)
-                                                }
-                                                .width(120.dp),
-                                            valueRange = 0f..1f
-                                        )
+                                                .width(48.dp)
+                                                .padding(vertical = 12.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            val volumePercent = (track.volume * 100).roundToInt()
+                                            Text(text = "$volumePercent%",
+                                                 style = MaterialTheme.typography.subtitle2,
+                                                 color = MaterialTheme.colors.primaryVariant)
+
+                                            Spacer(Modifier.height(8.dp))
+
+                                            Box(modifier = Modifier.height(160.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                val sliderDescription = stringResource(
+                                                    R.string.playlist_track_volume_description, name) + " ($volumePercent%)"
+                                                Slider(
+                                                    value = track.volume,
+                                                    onValueChange = { mutablePlaylist.setTrackVolume(index, it) },
+                                                    modifier = Modifier
+                                                        .graphicsLayer {
+                                                            rotationZ = 270f
+                                                            transformOrigin = TransformOrigin.Center
+                                                        }
+                                                        .requiredWidth(160.dp)
+                                                        .semantics {
+                                                            contentDescription = sliderDescription
+                                                        },
+                                                    valueRange = 0f..1f
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
