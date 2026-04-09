@@ -87,6 +87,7 @@ class PlayerNotification(
     private lateinit var notificationStyle: androidx.media.app.NotificationCompat.MediaStyle
 
     private var updateTimeLeftJob: Job? = null
+    private var stopTime: Instant? = stopTime
     private var timeUntilStop: Duration? =
         stopTime?.let { Duration.between(Instant.now(), it) }
 
@@ -224,19 +225,25 @@ class PlayerNotification(
 
     fun update(playbackState: Int, stopTime: Instant?) {
         this.playbackState = playbackState
+        this.stopTime = stopTime
 
         timeUntilStop = stopTime?.let { Duration.between(Instant.now(), it) }
         updateTimeLeftJob?.cancel()
-        if (stopTime != null)
+        val stopTimeCopy = stopTime
+        if (stopTimeCopy != null)
             updateTimeLeftJob = service.lifecycleScope.launch {
                 while (timeUntilStop != null) {
                     delay(1000)
-                    timeUntilStop?.minusSeconds(1)?.let {
-                        timeUntilStop = it
-                        val notification = notificationBuilder
-                            .updateText(timeUntilStop).build()
-                        notificationManager.notify(notificationId, notification)
+                    val now = Instant.now()
+                    if (now >= stopTimeCopy) {
+                        timeUntilStop = null
+                        update(playbackState, null)
+                        break
                     }
+                    timeUntilStop = Duration.between(now, stopTimeCopy)
+                    val notification = notificationBuilder
+                        .updateText(timeUntilStop).build()
+                    notificationManager.notify(notificationId, notification)
                 }
             }
 

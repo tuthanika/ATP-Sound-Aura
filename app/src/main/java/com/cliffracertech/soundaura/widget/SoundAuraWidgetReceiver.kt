@@ -1,25 +1,22 @@
 package com.cliffracertech.soundaura.widget
-
-import android.app.AlarmManager
+ 
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
 import com.cliffracertech.soundaura.SoundAuraApplication
 import com.cliffracertech.soundaura.edit
-import com.cliffracertech.soundaura.preferenceFlow
 import com.cliffracertech.soundaura.service.PlayerService
 import com.cliffracertech.soundaura.settings.PrefKeys
 import com.cliffracertech.soundaura.settings.dataStore
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
-
+ 
 class SoundAuraWidgetReceiver : BroadcastReceiver() {
-
+ 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-
+ 
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
         
@@ -34,7 +31,7 @@ class SoundAuraWidgetReceiver : BroadcastReceiver() {
                         val application = context.applicationContext as SoundAuraApplication
                         application.database.playlistDao().deactivateAll()
                         
-                        // Parar el servicio y actualizar la UI
+                        // Stop the service and update UI
                         SoundAuraWidget.sendAction(context, action)
                         withContext(Dispatchers.Main) {
                             SoundAuraWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
@@ -106,11 +103,6 @@ class SoundAuraWidgetReceiver : BroadcastReceiver() {
                         
                         context.dataStore.edit(volKey, next)
                         
-                        // Ensure slider is always hidden (just in case)
-                        val visKey = booleanPreferencesKey(PrefKeys.isVolumeSliderVisible)
-                        context.dataStore.edit(visKey, false)
-                        cancelAutoHide(context)
-                        
                         withContext(Dispatchers.Main) {
                             SoundAuraWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
                             PresetWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
@@ -139,27 +131,5 @@ class SoundAuraWidgetReceiver : BroadcastReceiver() {
             }
         }
     }
-
-    private fun scheduleAutoHide(context: Context) {
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, SoundAuraWidgetReceiver::class.java).apply {
-            action = SoundAuraWidget.ACTION_HIDE_VOLUME_SLIDER
-        }
-        val pendingIntent = PendingIntent.getBroadcast(
-            context, 0, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        
-        alarmManager.set(AlarmManager.RTC, System.currentTimeMillis() + 5000, pendingIntent)
-    }
-
-    private fun cancelAutoHide(context: Context) {
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, SoundAuraWidgetReceiver::class.java).apply {
-            action = SoundAuraWidget.ACTION_HIDE_VOLUME_SLIDER
-        }
-        val pendingIntent = PendingIntent.getBroadcast(
-            context, 0, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        alarmManager.cancel(pendingIntent)
-    }
 }
+

@@ -51,6 +51,7 @@ import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import java.util.concurrent.CopyOnWriteArrayList
 import javax.inject.Inject
 
 /**
@@ -187,8 +188,10 @@ class PlayerService: LifecycleService() {
 
             val masterVolumeKey = floatPreferencesKey(PrefKeys.masterVolume)
             dataStore.preferenceFlow(masterVolumeKey, 1f)
-                .onEach { playerMap.setMasterVolume(it) }
-                .launchIn(this)
+                .onEach { 
+                    playerMap.setMasterVolume(it)
+                    SoundAuraWidget.sendAction(this@PlayerService, SoundAuraWidget.ACTION_UPDATE_WIDGET)
+                }.launchIn(this)
 
             playlistDao.getActivePlaylistsAndTracks()
                 .onEach(::updatePlayers)
@@ -352,8 +355,13 @@ class PlayerService: LifecycleService() {
     fun setPlaylistVolume(playlistId: Long, volume: Float) =
         playerMap.setPlayerVolume(playlistId, volume)
 
-    fun setMasterVolume(volume: Float) =
+    fun setMasterVolume(volume: Float) {
         playerMap.setMasterVolume(volume)
+        val intent = Intent(this, SoundAuraWidgetReceiver::class.java).apply {
+            action = SoundAuraWidget.ACTION_UPDATE_WIDGET
+        }
+        sendBroadcast(intent)
+    }
 
     /**
      * Automatically pause playback if the parameter [condition] is true and
@@ -463,7 +471,7 @@ class PlayerService: LifecycleService() {
         private val _playbackState = MutableStateFlow(STATE_STOPPED)
         val playbackStateFlow = _playbackState.asStateFlow()
 
-        private val playbackChangeListeners = mutableListOf<PlaybackChangeListener>()
+        private val playbackChangeListeners = CopyOnWriteArrayList<PlaybackChangeListener>()
 
         private fun notifyListeners(newState: Int) {
             playbackChangeListeners.forEach { it.onPlaybackStateChange(newState) }
@@ -476,7 +484,8 @@ class PlayerService: LifecycleService() {
             updateImmediately: Boolean = false,
             listener: PlaybackChangeListener
         ) {
-            playbackChangeListeners.add(listener)
+            if (!playbackChangeListeners.contains(listener))
+                playbackChangeListeners.add(listener)
             if (updateImmediately)
                 listener.onPlaybackStateChange(playbackState)
         }

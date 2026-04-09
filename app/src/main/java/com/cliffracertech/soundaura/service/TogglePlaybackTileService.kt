@@ -60,6 +60,7 @@ class TogglePlaybackTileService: TileService() {
 
     override fun onStopListening() {
         listening = false
+        PlayerService.removePlaybackChangeListener(playbackChangeListener)
     }
 
     override fun onClick() {

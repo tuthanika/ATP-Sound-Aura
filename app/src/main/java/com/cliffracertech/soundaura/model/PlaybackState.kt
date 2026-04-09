@@ -4,6 +4,7 @@
 package com.cliffracertech.soundaura.model
 
 import android.content.Context
+import android.content.Intent
 import androidx.annotation.FloatRange
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,6 +20,8 @@ import com.cliffracertech.soundaura.preferenceFlow
 import com.cliffracertech.soundaura.service.PlayerService
 import com.cliffracertech.soundaura.settings.PrefKeys
 import com.cliffracertech.soundaura.settings.dataStore
+import com.cliffracertech.soundaura.widget.SoundAuraWidget
+import com.cliffracertech.soundaura.widget.SoundAuraWidgetReceiver
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -108,6 +111,11 @@ class PlayerServicePlaybackState(
         val scope = ProcessLifecycleOwner.get().lifecycleScope
         val masterVolumeKey = floatPreferencesKey(PrefKeys.masterVolume)
         context.dataStore.edit(masterVolumeKey, volume, scope)
+        
+        val updateIntent = Intent(context, SoundAuraWidgetReceiver::class.java).apply {
+            action = SoundAuraWidget.ACTION_UPDATE_WIDGET
+        }
+        context.sendBroadcast(updateIntent)
     }
 }
 

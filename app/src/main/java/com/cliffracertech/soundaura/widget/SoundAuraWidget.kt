@@ -12,22 +12,12 @@ import androidx.core.net.toUri
 import com.cliffracertech.soundaura.MainActivity
 import com.cliffracertech.soundaura.R
 import com.cliffracertech.soundaura.service.PlayerService
-import com.cliffracertech.soundaura.service.PlayerService.Companion.PlaybackChangeListener
 import kotlinx.coroutines.*
 
 class SoundAuraWidget : AppWidgetProvider() {
 
-    private val playbackChangeListener = PlaybackChangeListener { newState ->
-        val context = appContext ?: return@PlaybackChangeListener
-        val appWidgetManager = AppWidgetManager.getInstance(context)
-        val componentName = ComponentName(context, SoundAuraWidget::class.java)
-        val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
-
-        updateAllWidgets(context, appWidgetManager, appWidgetIds)
-    }
 
     companion object {
-        private var appContext: Context? = null
         private var serviceScope: CoroutineScope? = null
 
         const val ACTION_PLAY_PAUSE = "com.cliffracertech.soundaura.widget.ACTION_PLAY_PAUSE"
@@ -36,10 +26,8 @@ class SoundAuraWidget : AppWidgetProvider() {
         const val EXTRA_PLAYLIST_ID = "extra_playlist_id"
         const val EXTRA_PLAYLIST_NAME = "extra_playlist_name"
         const val ACTION_UPDATE_WIDGET = "com.cliffracertech.soundaura.widget.ACTION_UPDATE_WIDGET"
-        const val ACTION_TOGGLE_VOLUME_SLIDER = "com.cliffracertech.soundaura.widget.ACTION_TOGGLE_VOLUME_SLIDER"
         const val ACTION_SET_VOLUME_LEVEL = "com.cliffracertech.soundaura.widget.ACTION_SET_VOLUME_LEVEL"
         const val ACTION_CYCLE_VOLUME = "com.cliffracertech.soundaura.widget.ACTION_CYCLE_VOLUME"
-        const val ACTION_HIDE_VOLUME_SLIDER = "com.cliffracertech.soundaura.widget.ACTION_HIDE_VOLUME_SLIDER"
         const val EXTRA_VOLUME_LEVEL = "extra_volume_level"
 
         fun sendAction(context: Context, action: String, playlistId: Long = -1, playlistName: String = "") {
@@ -76,17 +64,10 @@ class SoundAuraWidget : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        appContext = context.applicationContext
 
         // Iniciar servicio para mantener el widget actualizado
         serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
         startWidgetUpdateService(context)
-
-        // Registrar listener para cambios en el estado de reproducción
-        PlayerService.addPlaybackChangeListener(
-            updateImmediately = true,
-            listener = playbackChangeListener
-        )
 
         updateAllWidgets(context, appWidgetManager, appWidgetIds)
     }
@@ -100,7 +81,6 @@ class SoundAuraWidget : AppWidgetProvider() {
         super.onDisabled(context)
         serviceScope?.cancel()
         serviceScope = null
-        PlayerService.removePlaybackChangeListener(playbackChangeListener)
     }
 
     private fun checkAndCleanupListeners(context: Context) {
@@ -111,7 +91,6 @@ class SoundAuraWidget : AppWidgetProvider() {
         if (remainingWidgets.isEmpty()) {
             serviceScope?.cancel()
             serviceScope = null
-            PlayerService.removePlaybackChangeListener(playbackChangeListener)
         }
     }
 

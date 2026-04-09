@@ -10,21 +10,11 @@ import androidx.core.net.toUri
 import com.cliffracertech.soundaura.MainActivity
 import com.cliffracertech.soundaura.R
 import com.cliffracertech.soundaura.service.PlayerService
-import com.cliffracertech.soundaura.service.PlayerService.Companion.PlaybackChangeListener
 
 class PresetWidget : AppWidgetProvider() {
 
-    private val playbackChangeListener = PlaybackChangeListener { newState ->
-        val context = appContext ?: return@PlaybackChangeListener
-        val appWidgetManager = AppWidgetManager.getInstance(context)
-        val componentName = ComponentName(context, PresetWidget::class.java)
-        val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
-
-        updateAllWidgets(context, appWidgetManager, appWidgetIds)
-    }
 
     companion object {
-        private var appContext: Context? = null
         
         const val ACTION_LOAD_PRESET = "com.cliffracertech.soundaura.widget.ACTION_LOAD_PRESET"
         const val EXTRA_PRESET_NAME = "extra_preset_name"
@@ -44,19 +34,11 @@ class PresetWidget : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        appContext = context.applicationContext
-
-        PlayerService.addPlaybackChangeListener(
-            updateImmediately = true,
-            listener = playbackChangeListener
-        )
-
         updateAllWidgets(context, appWidgetManager, appWidgetIds)
     }
 
     override fun onDisabled(context: Context) {
         super.onDisabled(context)
-        PlayerService.removePlaybackChangeListener(playbackChangeListener)
     }
 
     private fun updateAllWidgets(

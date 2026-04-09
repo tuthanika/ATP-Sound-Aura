@@ -365,13 +365,21 @@ sealed class LibraryState {
                     val newFolder = androidx.documentfile.provider.DocumentFile.fromTreeUri(context, newFolderUri) ?: return@launchIO
                     val newFolderFiles = newFolder.listFiles()
 
-                    for (track in tracks) {
-                        val file = androidx.documentfile.provider.DocumentFile.fromSingleUri(context, track.uri)
-                        val oldName = (file?.name ?: track.uri.lastPathSegment ?: continue)
+                    val extractBaseName = { uri: Uri ->
+                        val file = androidx.documentfile.provider.DocumentFile.fromSingleUri(context, uri)
+                        (file?.name ?: uri.lastPathSegment ?: "")
                             .substringAfterLast('/')
                             .substringAfterLast(':')
+                    }
+
+                    for (track in tracks) {
+                        val oldName = extractBaseName(track.uri)
+                        if (oldName.isEmpty()) continue
+                        
                         val matchingNewFile = newFolderFiles.find { 
-                            it.name?.substringAfterLast('/')?.substringAfterLast(':') == oldName 
+                            val newName = it.name ?: it.uri.lastPathSegment ?: ""
+                            newName.substringAfterLast('/')
+                                   .substringAfterLast(':') == oldName
                         }
                         if (matchingNewFile != null) {
                             modifyLibrary.updateTrackUri(track.uri, matchingNewFile.uri)
