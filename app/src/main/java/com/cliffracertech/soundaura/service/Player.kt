@@ -44,6 +44,7 @@ class Player(
     private var targetBoostDb = playlist.volumeBoostDb
     private var hasReportedCompletion = false
     private var volumeFadeMultiplier = if (startImmediately) 0f else 1f
+    private var volumeMultiplier = 1f
     private var fadeJob: Job? = null
     var masterVolume = masterVolume
         set(value) {
@@ -103,8 +104,13 @@ class Player(
         }
     }
 
+    fun setVolumeMultiplier(multiplier: Float) {
+        volumeMultiplier = multiplier
+        setVolume(playlist.volume)
+    }
+
     fun setVolume(volume: Float) {
-        val effectiveMultiplier = masterVolume * masterVolume * volumeFadeMultiplier
+        val effectiveMultiplier = masterVolume * masterVolume * volumeFadeMultiplier * volumeMultiplier
         if (playlist.playSequentially) {
             exoPlayers.firstOrNull()?.apply {
                 val currentTrack = currentMediaItemIndex.let {
@@ -282,6 +288,10 @@ class PlayerMap(
     fun setMasterVolume(volume: Float) {
         masterVolume = volume
         playerMap.values.forEach { it.masterVolume = volume }
+    }
+
+    fun setVolumeMultiplier(multiplier: Float) {
+        playerMap.values.forEach { it.setVolumeMultiplier(multiplier) }
     }
 
     fun releaseAll() = playerMap.values.forEach(Player::release)

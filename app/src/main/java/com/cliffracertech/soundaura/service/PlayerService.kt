@@ -393,7 +393,22 @@ class PlayerService: LifecycleService() {
                 .setContentType(CONTENT_TYPE_UNKNOWN)
                 .setUsage(USAGE_MEDIA).build())
             .setOnAudioFocusChangeListener { focusChange ->
-                hasAudioFocus = focusChange == AUDIOFOCUS_GAIN
+                when (focusChange) {
+                    AUDIOFOCUS_GAIN -> {
+                        hasAudioFocus = true
+                        playerMap.setVolumeMultiplier(1f)
+                        autoPauseIf(false, autoPauseAudioFocusLossKey)
+                    }
+                    AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                        hasAudioFocus = true
+                        playerMap.setVolumeMultiplier(0.2f)
+                    }
+                    AUDIOFOCUS_LOSS_TRANSIENT,
+                    AUDIOFOCUS_LOSS -> {
+                        hasAudioFocus = false
+                        autoPauseIf(true, autoPauseAudioFocusLossKey)
+                    }
+                }
             }.build()
 
     /** Request audio focus, and return whether the request was granted. */
