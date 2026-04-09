@@ -111,6 +111,7 @@ class PlayerService: LifecycleService() {
 
     private val playerMap = PlayerMap(
         context = this,
+        scope = lifecycleScope,
         onPlaybackFailure = { problemUris ->
             lifecycleScope.launch { playlistDao.setTracksHaveError(problemUris) }
         },
@@ -292,9 +293,13 @@ class PlayerService: LifecycleService() {
             stopInsteadOfPause -> playerMap.stop()
             else ->               playerMap.pause()
         } else {
+            playerMap.stop()
             if (!playInBackground && hasAudioFocus)
                 abandonAudioFocus()
-            stopSelf()
+            lifecycleScope.launch {
+                delay(500)
+                stopSelf()
+            }
         }
     }
 

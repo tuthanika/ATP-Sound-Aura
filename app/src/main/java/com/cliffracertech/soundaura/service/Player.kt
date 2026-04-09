@@ -12,6 +12,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player as ExoPlayerState
 import androidx.media3.exoplayer.ExoPlayer
 import com.cliffracertech.soundaura.model.database.TrackWithVolume
+import kotlinx.coroutines.*
 
 data class ActivePlaylistSummary(
     val id: Long,
@@ -31,6 +32,7 @@ val ActivePlaylist.trackUris get() = value.map(TrackWithVolume::uri)
 
 class Player(
     private val context: Context,
+    private val scope: CoroutineScope,
     private var playlist: ActivePlaylist,
     startImmediately: Boolean = false,
     masterVolume: Float = 1f,
@@ -41,6 +43,8 @@ class Player(
     private var volumeBoosters: List<LoudnessEnhancer> = emptyList()
     private var targetBoostDb = playlist.volumeBoostDb
     private var hasReportedCompletion = false
+    private var volumeFadeMultiplier = if (startImmediately) 0f else 1f
+    private var fadeJob: Job? = null
     var masterVolume = masterVolume
         set(value) {
             field = value
@@ -49,6 +53,8 @@ class Player(
 
     init {
         initializeExoPlayer(startImmediately)
+        if (startImmediately)
+            fadeVolume(toMultiplier = 1f, duration = 1000)
     }
 
     fun play() {
@@ -57,25 +63,58 @@ class Player(
             hasReportedCompletion = false
         }
         exoPlayers.forEach { it.playWhenReady = true }
+        fadeVolume(toMultiplier = 1f, duration = 500)
     }
-    fun pause() = exoPlayers.forEach(ExoPlayer::pause)
+
+    fun pause() {
+        fadeVolume(toMultiplier = 0f, duration = 500) {
+            exoPlayers.forEach(ExoPlayer::pause)
+        }
+    }
 
     fun stop() {
-        exoPlayers.forEach(ExoPlayer::pause)
-        exoPlayers.forEach(ExoPlayer::seekToDefaultPosition)
+        fadeVolume(toMultiplier = 0f, duration = 500) {
+            exoPlayers.forEach(ExoPlayer::pause)
+            exoPlayers.forEach(ExoPlayer::seekToDefaultPosition)
+        }
+    }
+
+    private fun fadeVolume(
+        toMultiplier: Float,
+        duration: Long,
+        onComplete: () -> Unit = {}
+    ) {
+        fadeJob?.cancel()
+        fadeJob = scope.launch {
+            val startMultiplier = volumeFadeMultiplier
+            val diff = toMultiplier - startMultiplier
+            val steps = (duration / 20).toInt()
+            if (steps > 0) {
+                for (i in 1..steps) {
+                    delay(20)
+                    volumeFadeMultiplier = startMultiplier + diff * (i.toFloat() / steps)
+                    setVolume(playlist.volume)
+                }
+            }
+            volumeFadeMultiplier = toMultiplier
+            setVolume(playlist.volume)
+            onComplete()
+            fadeJob = null
+        }
     }
 
     fun setVolume(volume: Float) {
+        val effectiveMultiplier = masterVolume * masterVolume * volumeFadeMultiplier
         if (playlist.playSequentially) {
             exoPlayers.firstOrNull()?.apply {
                 val currentTrack = currentMediaItemIndex.let {
                     if (it in playlist.tracks.indices) playlist.tracks[it] else null
                 }
                 val trackVol = currentTrack?.volume ?: 1f
-                this.volume = volume * (masterVolume * masterVolume) * trackVol
+                this.volume = volume * effectiveMultiplier * trackVol
             }
         } else exoPlayers.forEachIndexed { index, player ->
-            player.volume = volume * (masterVolume * masterVolume) * playlist.tracks[index].volume
+            player.volume = volume * effectiveMultiplier * playlist.tracks[index].volume
         }
     }
 
@@ -103,6 +142,7 @@ class Player(
         exoPlayers.isNotEmpty() && exoPlayers.all { it.playbackState == ExoPlayerState.STATE_ENDED }
 
     fun release() {
+        fadeJob?.cancel()
         volumeBoosters.forEach { 
             try { it.enabled = false; it.release() } 
             catch (e: Exception) { /* already released */ }
@@ -150,7 +190,7 @@ class Player(
                         if (it in tracks.indices) tracks[it] else null
                     }
                     val trackVol = currentTrack?.volume ?: 1f
-                    volume = sourcePlaylist.volume * (masterVolume * masterVolume) * trackVol
+                    volume = sourcePlaylist.volume * (masterVolume * masterVolume * volumeFadeMultiplier) * trackVol
                 }
                 updateSequentialVolume()
                 addListener(object : ExoPlayerState.Listener {
@@ -175,7 +215,7 @@ class Player(
                 repeatMode = if (track.loopEnabled)
                     ExoPlayerState.REPEAT_MODE_ONE
                 else ExoPlayerState.REPEAT_MODE_OFF
-                volume = sourcePlaylist.volume * (masterVolume * masterVolume) * track.volume
+                volume = sourcePlaylist.volume * (masterVolume * masterVolume * volumeFadeMultiplier) * track.volume
                 addListener(object : ExoPlayerState.Listener {
                     override fun onPlaybackStateChanged(playbackState: Int) {
                         notifyPlaybackCompleteIfNeeded()
@@ -218,6 +258,7 @@ class Player(
 
 class PlayerMap(
     private val context: Context,
+    private val scope: CoroutineScope,
     private val onPlaybackFailure: (uris: List<Uri>) -> Unit,
     private val onAllPlaybackComplete: () -> Unit = {},
 ) {
@@ -260,6 +301,7 @@ class PlayerMap(
             playerMap[playlist.id] = existingPlayer ?:
                 Player(
                     context = context,
+                    scope = scope,
                     playlist = playlist,
                     startImmediately = startPlaying,
                     masterVolume = masterVolume,
