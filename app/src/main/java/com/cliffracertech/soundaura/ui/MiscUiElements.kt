@@ -6,7 +6,6 @@ package com.cliffracertech.soundaura.ui
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -15,12 +14,11 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -33,7 +31,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.ButtonColors
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.ButtonElevation
@@ -44,7 +41,6 @@ import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -54,7 +50,6 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
@@ -67,9 +62,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import com.cliffracertech.soundaura.rememberMutableIntStateOf
-import com.cliffracertech.soundaura.rememberMutableStateOf
-import kotlinx.coroutines.delay
+
 
 internal const val tweenDuration = 250// * 4
 internal const val springStiffness = 700f // 30f
@@ -152,32 +145,15 @@ fun Modifier.minTouchTargetSize() =
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current,
 ) {
-    val content = @Composable { maxWidth: Dp ->
-        val scrollState = rememberScrollState()
-        var shouldAnimate by rememberMutableStateOf(true)
-        var animationDuration by rememberMutableIntStateOf(0)
-        if (animationDuration > 0)
-            LaunchedEffect(shouldAnimate) {
-                scrollState.animateScrollTo(scrollState.maxValue,
-                    tween(animationDuration, 2000, LinearEasing))
-                delay(2000)
-                scrollState.animateScrollTo(0)
-                shouldAnimate = !shouldAnimate
-            }
-        val density = LocalDensity.current
-        Text(text, Modifier.horizontalScroll(scrollState, false),
-            color, fontSize, fontStyle, fontWeight, fontFamily, letterSpacing,
-            textDecoration, textAlign, lineHeight, overflow, maxLines = 1,
-            onTextLayout = {
-                onTextLayout(it)
-                val overflowAmount = it.size.width -
-                    with(density) { maxWidth.roundToPx() }
-                animationDuration = overflowAmount.coerceAtLeast(0) * 10
-            }, style = style)
-    }
-    if (maxWidth == null)
-        BoxWithConstraints(modifier) { content(this.maxWidth) }
-    else Box(modifier) { content(maxWidth) }
+    Text(text,
+        modifier = modifier.basicMarquee(
+            iterations = Int.MAX_VALUE,
+            initialDelayMillis = 2000,
+            repeatDelayMillis = 2000),
+        color, fontSize, fontStyle, fontWeight, fontFamily, letterSpacing,
+        textDecoration, textAlign, lineHeight, overflow,
+        softWrap = false, maxLines = 1, onTextLayout = onTextLayout,
+        style = style)
 }
 
 /** The same as an [androidx.compose.material.TextButton], except that the

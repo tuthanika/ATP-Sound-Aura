@@ -393,7 +393,7 @@ class MutablePlaylist(tracks: List<com.cliffracertech.soundaura.model.database.T
                         iconPadding = 12.dp,
                         onClick = { onChangePathClick(track.uri) })
 
-                    MarqueeText("…${File.separatorChar}$name", Modifier.weight(1f))
+                    MarqueeText(name, Modifier.weight(1f))
 
                     if (track.hasError)
                         Icon(imageVector = Icons.Default.Error,
