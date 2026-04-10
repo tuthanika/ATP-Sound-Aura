@@ -12,14 +12,10 @@ import androidx.core.net.toUri
 import com.cliffracertech.soundaura.MainActivity
 import com.cliffracertech.soundaura.R
 import com.cliffracertech.soundaura.service.PlayerService
-import kotlinx.coroutines.*
 
 class SoundAuraWidget : AppWidgetProvider() {
 
-
     companion object {
-        private var serviceScope: CoroutineScope? = null
-
         const val ACTION_PLAY_PAUSE = "com.cliffracertech.soundaura.widget.ACTION_PLAY_PAUSE"
         const val ACTION_STOP = "com.cliffracertech.soundaura.widget.ACTION_STOP"
         const val ACTION_TOGGLE_PLAYLIST = "com.cliffracertech.soundaura.widget.ACTION_TOGGLE_PLAYLIST"
@@ -64,11 +60,7 @@ class SoundAuraWidget : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-
-        // Iniciar servicio para mantener el widget actualizado
-        serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
         startWidgetUpdateService(context)
-
         updateAllWidgets(context, appWidgetManager, appWidgetIds)
     }
 
@@ -79,19 +71,10 @@ class SoundAuraWidget : AppWidgetProvider() {
 
     override fun onDisabled(context: Context) {
         super.onDisabled(context)
-        serviceScope?.cancel()
-        serviceScope = null
     }
 
     private fun checkAndCleanupListeners(context: Context) {
-        val appWidgetManager = AppWidgetManager.getInstance(context)
-        val componentName = ComponentName(context, SoundAuraWidget::class.java)
-        val remainingWidgets = appWidgetManager.getAppWidgetIds(componentName)
-
-        if (remainingWidgets.isEmpty()) {
-            serviceScope?.cancel()
-            serviceScope = null
-        }
+        // No active widget instances remain — nothing to clean up at the scope level.
     }
 
     private fun startWidgetUpdateService(context: Context) {

@@ -236,8 +236,13 @@ class PlayerNotification(
                     delay(1000)
                     val now = Instant.now()
                     if (now >= stopTimeCopy) {
+                        // BUG-10 fix: don't call update() recursively — it would cancel THIS
+                        // coroutine and race-launch a new updateTimeLeftJob simultaneously.
+                        // Simply clear the timer and break; the caller (PlayerService) will
+                        // call setPlaybackState(STOPPED) which triggers update() correctly.
                         timeUntilStop = null
-                        update(playbackState, null)
+                        val notification = notificationBuilder.updateText(null).build()
+                        notificationManager.notify(notificationId, notification)
                         break
                     }
                     timeUntilStop = Duration.between(now, stopTimeCopy)

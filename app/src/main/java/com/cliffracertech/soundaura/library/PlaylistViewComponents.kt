@@ -417,8 +417,10 @@ class MutablePlaylist(tracks: List<com.cliffracertech.soundaura.model.database.T
 
                         var showingVolumeSlider by remember { mutableStateOf(false) }
 
-                        androidx.compose.runtime.LaunchedEffect(showingVolumeSlider, track.volume) {
-                            if (showingVolumeSlider) {
+                        // Only run the auto-dismiss timer while the popup is open.
+                        // Using track.volume as a key resets the 5 s countdown on each drag.
+                        if (showingVolumeSlider) {
+                            androidx.compose.runtime.LaunchedEffect(track.volume) {
                                 kotlinx.coroutines.delay(5000L)
                                 showingVolumeSlider = false
                             }

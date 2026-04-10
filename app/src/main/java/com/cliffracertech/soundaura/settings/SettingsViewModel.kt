@@ -242,8 +242,12 @@ class SettingsViewModel @Inject constructor(
 
     private fun togglePlayInBackground() {
         scope.launch {
-            dataStore.edit {
-                it[playInBackgroundKey] = !playInBackground
+            // IMP-1 fix: read the current value inside the edit transaction to prevent a
+            // double-tap race condition where two coroutines both read the same stale
+            // `playInBackground` value and cancel each other out.
+            dataStore.edit { prefs ->
+                val current = prefs[playInBackgroundKey] ?: false
+                prefs[playInBackgroundKey] = !current
             }
         }
     }

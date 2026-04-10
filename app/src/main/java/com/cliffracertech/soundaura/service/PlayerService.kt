@@ -19,7 +19,6 @@ import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.content.ContextCompat
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.lifecycle.LifecycleService
@@ -109,6 +108,7 @@ class PlayerService: LifecycleService() {
     private lateinit var notification: PlayerNotification
 
     private var autoStopJob: Job? = null
+    private var stopSelfJob: Job? = null  // BUG-11: tracked separately so it can be cancelled on resume
     private var stopTime by mutableStateOf<Instant?>(null)
 
     private val playerMap = PlayerMap(
@@ -203,8 +203,9 @@ class PlayerService: LifecycleService() {
 
         binder = binder ?: Binder()
         playbackModules.forEach { it.onCreate(this) }
-        val intent = Intent(this, PlayerService::class.java)
-        ContextCompat.startForegroundService(this, intent)
+        // IMP-2 fix: removed the redundant `startForegroundService(this)` self-call.
+        // The service is already promoted to foreground by PlayerNotification.startForeground().
+        // Calling it here would redundantly trigger another onStartCommand with an empty intent.
     }
 
     override fun onDestroy() {
@@ -279,6 +280,10 @@ class PlayerService: LifecycleService() {
 
         if (clearUnpauseLocks)
             unpauseLocks.clear()
+        // BUG-11 fix: cancel any pending stopSelf() when playback resumes, so a fast
+        // Play tap after Stop (within 500ms) doesn't kill the restarted service.
+        if (newState != STATE_STOPPED)
+            stopSelfJob?.cancel()
         playbackState = newState
         updateNotification()
 		
@@ -298,7 +303,8 @@ class PlayerService: LifecycleService() {
             playerMap.stop()
             if (!playInBackground && hasAudioFocus)
                 abandonAudioFocus()
-            lifecycleScope.launch {
+            stopSelfJob?.cancel()
+            stopSelfJob = lifecycleScope.launch {
                 delay(500)
                 stopSelf()
             }
@@ -364,8 +370,11 @@ class PlayerService: LifecycleService() {
 
     fun setMasterVolume(volume: Float) {
         playerMap.setMasterVolume(volume)
+        // BUG-3 fix: add FLAG_RECEIVER_FOREGROUND so the widget updates reliably in Doze Mode,
+        // consistent with the same flag already used in setPlaybackState.
         val intent = Intent(this, SoundAuraWidgetReceiver::class.java).apply {
             action = SoundAuraWidget.ACTION_UPDATE_WIDGET
+            addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
         }
         sendBroadcast(intent)
     }

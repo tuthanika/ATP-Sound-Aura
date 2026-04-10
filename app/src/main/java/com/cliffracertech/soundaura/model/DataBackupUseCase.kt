@@ -94,23 +94,8 @@ class DataBackupUseCase @Inject constructor(
             val jsonString = inputStream.bufferedReader().use { it.readText() }
             val appData = json.decodeFromString<AppData>(jsonString)
 
-            database.runInTransaction {
-                // We use runInTransaction to ensure clearing and inserting is atomic
-                // Unfortunately clearAllTables() cannot be used inside an active transaction 
-                // on some Room versions or requires careful handling.
-                // We'll use manual deletes for safety within transaction.
-                // But RoomDatabase.clearAllTables() is usually better.
-            }
-            
-            // For simplicity and to avoid foreign key issues during clearing, 
-            // we'll clear tables in correct order.
-            database.runInTransaction {
-                // Delete everything
-                // SQLite doesn't have a simple way to truncate all, 
-                // so we delete from child to parent.
-            }
-
-            // Using Room's clearAllTables instead
+            // BUG-2 fix: removed two empty runInTransaction {} blocks that were
+            // left over from refactoring and served no purpose.
             database.clearAllTables()
 
             // Restore DB
@@ -131,7 +116,7 @@ class DataBackupUseCase @Inject constructor(
                     try {
                         val decodedUrl = Uri.decode(uriString)
                         val pathComponent = decodedUrl.substringAfterLast("/document/", "")
-                        
+
                         if (pathComponent.isNotEmpty() && pathComponent.contains(":")) {
                             val split = pathComponent.split(":", limit = 2)
                             val volume = split[0]
@@ -139,55 +124,69 @@ class DataBackupUseCase @Inject constructor(
                             val fileName = filePath.substringAfterLast("/")
 
                             // Tạo đường dẫn file vật lý (POSIX)
-                            val absolutePath = if (volume.equals("primary", ignoreCase = true)) {
+                            val rawAbsolutePath = if (volume.equals("primary", ignoreCase = true)) {
                                 "/storage/emulated/0/$filePath"
                             } else {
                                 "/storage/$volume/$filePath"
                             }
 
-                            // Cứu cánh 1: Dùng quyền Global đọc thẳng File vật lý
-                            val file = java.io.File(absolutePath)
-                            if (file.exists() && file.canRead()) {
-                                finalUri = Uri.fromFile(file)
-                                isReadable = true
-                            } 
-                            // Cứu cánh 2: Dùng MediaStore.Files tóm cổ file qua Tên và Đường dẫn
-                            else {
-                                val projection = arrayOf(MediaStore.Files.FileColumns._ID, MediaStore.Files.FileColumns.DATA)
-                                val urisToQuery = mutableListOf(MediaStore.Files.getContentUri("external"))
-                                
-                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                                    MediaStore.getExternalVolumeNames(context).forEach {
-                                        urisToQuery.add(MediaStore.Files.getContentUri(it))
-                                    }
-                                }
+                            // SEC-1 fix: validate canonical path to prevent path traversal attacks
+                            // from a malicious backup JSON file.
+                            val canonicalPath = try { java.io.File(rawAbsolutePath).canonicalPath } catch (e: Exception) { null }
+                            val allowedRoot = if (volume.equals("primary", ignoreCase = true))
+                                "/storage/emulated/0"
+                            else "/storage/$volume"
 
-                                for (queryUri in urisToQuery) {
-                                    context.contentResolver.query(
-                                        queryUri, projection,
-                                        "${MediaStore.Files.FileColumns.DISPLAY_NAME} = ?", arrayOf(fileName), null
-                                    )?.use { cursor ->
-                                        val idCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID)
-                                        val dataCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATA)
-                                        
-                                        // Quét tìm file có đường dẫn trùng khớp tuyệt đối
-                                        while (cursor.moveToNext()) {
-                                            val data = cursor.getString(dataCol)
-                                            if (data == absolutePath) {
+                            if (canonicalPath == null || !canonicalPath.startsWith(allowedRoot)) {
+                                // Path traversal detected — skip auto-relink for this track
+                                android.util.Log.w("DataBackup", "Path traversal attempt blocked for URI: $uriString")
+                            } else {
+                                val absolutePath = canonicalPath
+
+                                // Cứu cánh 1: Dùng quyền Global đọc thẳng File vật lý
+                                val file = java.io.File(absolutePath)
+                                if (file.exists() && file.canRead()) {
+                                    finalUri = Uri.fromFile(file)
+                                    isReadable = true
+                                }
+                                // Cứu cánh 2: Dùng MediaStore.Files tóm cổ file qua Tên và Đường dẫn
+                                else {
+                                    val projection = arrayOf(MediaStore.Files.FileColumns._ID, MediaStore.Files.FileColumns.DATA)
+                                    val urisToQuery = mutableListOf(MediaStore.Files.getContentUri("external"))
+
+                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                                        MediaStore.getExternalVolumeNames(context).forEach {
+                                            urisToQuery.add(MediaStore.Files.getContentUri(it))
+                                        }
+                                    }
+
+                                    for (queryUri in urisToQuery) {
+                                        context.contentResolver.query(
+                                            queryUri, projection,
+                                            "${MediaStore.Files.FileColumns.DISPLAY_NAME} = ?", arrayOf(fileName), null
+                                        )?.use { cursor ->
+                                            val idCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID)
+                                            val dataCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATA)
+
+                                            // Quét tìm file có đường dẫn trùng khớp tuyệt đối
+                                            while (cursor.moveToNext()) {
+                                                val data = cursor.getString(dataCol)
+                                                if (data == absolutePath) {
+                                                    val id = cursor.getLong(idCol)
+                                                    finalUri = ContentUris.withAppendedId(queryUri, id)
+                                                    isReadable = true
+                                                    break
+                                                }
+                                            }
+                                            // Nếu không khớp đường dẫn, lấy tạm file đầu tiên trùng tên
+                                            if (!isReadable && cursor.moveToFirst()) {
                                                 val id = cursor.getLong(idCol)
                                                 finalUri = ContentUris.withAppendedId(queryUri, id)
                                                 isReadable = true
-                                                break
                                             }
                                         }
-                                        // Nếu không khớp đường dẫn, lấy tạm file đầu tiên trùng tên
-                                        if (!isReadable && cursor.moveToFirst()) {
-                                            val id = cursor.getLong(idCol)
-                                            finalUri = ContentUris.withAppendedId(queryUri, id)
-                                            isReadable = true
-                                        }
+                                        if (isReadable) break
                                     }
-                                    if (isReadable) break
                                 }
                             }
                         }
@@ -217,15 +216,16 @@ class DataBackupUseCase @Inject constructor(
                 PresetPlaylist(it.presetName, it.playlistName, it.playlistVolume)
             })
 
-            // Restore Settings
-            dataStore.edit { prefs ->
+            // Restore Settings — only restore known keys to avoid garbage in DataStore.
+                // IMP-3 fix: notificationPermissionRequested is intentionally excluded because
+                // restoring it would prevent a fresh device from ever being asked for
+                // notification permission after a backup restore.
+                dataStore.edit { prefs ->
                 appData.settings.forEach { (keyName, value) ->
                     val valuePrimitive = value as? JsonPrimitive ?: return@forEach
-                    // We only restore known keys to avoid garbage in DataStore
                     when (keyName) {
                         PrefKeys.showActivePlaylistsFirst,
                         PrefKeys.playInBackground,
-                        PrefKeys.notificationPermissionRequested,
                         PrefKeys.stopInsteadOfPause,
                         PrefKeys.playButtonLongClickHintShown,
                         PrefKeys.isVolumeSliderVisible -> {
@@ -275,7 +275,19 @@ class DataBackupUseCase @Inject constructor(
         allTracks.forEach { track ->
             val fileName = track.uri.lastPathSegment
                 ?.substringAfterLast('/')?.substringAfterLast(':') ?: return@forEach
-            val matchingFile = allFiles.find { it.name == fileName }
+
+            // BUG-6 fix: if multiple files share the same name, skip relinking to avoid
+            // false-positive matches (e.g. rain.mp3 in /Music/ AND /Downloads/).
+            val candidates = allFiles.filter { it.name == fileName }
+            val matchingFile = when {
+                candidates.size == 1 -> candidates.first()
+                candidates.size > 1 -> {
+                    android.util.Log.w("DataBackup", "Ambiguous relink: $fileName has ${candidates.size} matches — skipping")
+                    null
+                }
+                else -> null
+            }
+
             if (matchingFile != null && matchingFile.uri != track.uri) {
                 playlistDao.updateTrackUri(track.uri, matchingFile.uri)
                 playlistDao.setTrackHasError(matchingFile.uri, false)
@@ -301,7 +313,13 @@ class DataBackupUseCase @Inject constructor(
     private fun listFilesRecursive(directory: DocumentFile, depth: Int = 0): List<DocumentFile> {
         if (depth > 5) return emptyList()
         val files = mutableListOf<DocumentFile>()
-        directory.listFiles().forEach { file ->
+        // IMP-6 fix: wrap in try-catch — listFiles() can crash if the SD card is unmounted
+        // or the permission was revoked between acquiring the tree URI and iterating.
+        val children = try { directory.listFiles() } catch (e: Exception) {
+            android.util.Log.w("DataBackup", "listFiles() failed for ${directory.uri}", e)
+            emptyArray()
+        }
+        children.forEach { file ->
             if (file.isDirectory) {
                 files.addAll(listFilesRecursive(file, depth + 1))
             } else if (file.name != null) {

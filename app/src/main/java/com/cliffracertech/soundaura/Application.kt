@@ -20,14 +20,18 @@ class SoundAuraApplication : android.app.Application() {
     @Inject
     lateinit var database: SoundAuraDatabase
 
+    // BUG-8 fix: keep a named reference so addPlaybackChangeListener's contains() check
+    // works correctly across warm restarts (anonymous lambdas are always new instances).
+    private val tileUpdateListener = PlayerService.Companion.PlaybackChangeListener {
+        if (!TogglePlaybackTileService.listening)
+            TileService.requestListeningState(
+                this, ComponentName(this, TogglePlaybackTileService::class.java))
+    }
+
     override fun onCreate() {
         super.onCreate()
 
-        PlayerService.addPlaybackChangeListener {
-            if (!TogglePlaybackTileService.listening)
-                TileService.requestListeningState(
-                    this, ComponentName(this, TogglePlaybackTileService::class.java))
-        }
+        PlayerService.addPlaybackChangeListener(listener = tileUpdateListener)
 
         // --- Start the recovery service on app startup ---
         // Esto intentará adquirir permisos persistentes para todos los tracks existentes.

@@ -9,6 +9,7 @@ import com.cliffracertech.soundaura.model.database.Track
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -24,12 +25,17 @@ class PlaylistRecoveryService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Run recovery in the background without blocking the main thread
-        CoroutineScope(Dispatchers.IO).launch {
-            recoverPlaylistPermissions()
+        // BUG-7 fix: use try/finally so stopSelf() is guaranteed to run even if
+        // recoverPlaylistPermissions() throws. Without this the service becomes a zombie.
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            try {
+                recoverPlaylistPermissions()
+            } catch (e: Exception) {
+                android.util.Log.e("PlaylistRecovery", "Recovery failed", e)
+            } finally {
+                stopSelf()
+            }
         }
-        // We don't want the service to stay alive if not necessary.
-        // It will stop itself when the coroutine finishes.
         return START_NOT_STICKY
     }
 
@@ -45,8 +51,6 @@ class PlaylistRecoveryService : Service() {
             // 3. Attempt to acquire permissions. This will not block the UI.
             permissionHandler.acquirePermissionsFor(urisToRecover)
         }
-
-        // 4. Stop the service once finished
-        stopSelf()
+        // stopSelf() moved to finally block in onStartCommand
     }
 }

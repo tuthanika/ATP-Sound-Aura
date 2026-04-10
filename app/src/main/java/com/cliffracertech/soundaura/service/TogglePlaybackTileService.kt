@@ -34,22 +34,25 @@ class TogglePlaybackTileService: TileService() {
 
     private val playbackChangeListener =
         PlayerService.Companion.PlaybackChangeListener { newState: Int ->
-            qsTile.label = getString(R.string.app_name)
-            if (PlayerService.playbackState == PlaybackStateCompat.STATE_PLAYING) {
-                qsTile.state = STATE_ACTIVE
-                qsTile.contentDescription = getString(R.string.tile_active_description)
+            // BUG-9 fix: use newState parameter directly (not PlayerService.playbackState)
+            // to eliminate TOCTOU race condition. Also add null guard on qsTile.
+            val tile = qsTile ?: return@PlaybackChangeListener
+            tile.label = getString(R.string.app_name)
+            if (newState == PlaybackStateCompat.STATE_PLAYING) {
+                tile.state = STATE_ACTIVE
+                tile.contentDescription = getString(R.string.tile_active_description)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-                    qsTile.subtitle = getString(R.string.playing)
+                    tile.subtitle = getString(R.string.playing)
             } else {
-                qsTile.state = STATE_INACTIVE
-                qsTile.contentDescription = getString(R.string.tile_inactive_description)
+                tile.state = STATE_INACTIVE
+                tile.contentDescription = getString(R.string.tile_inactive_description)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-                    qsTile.subtitle = getString(
-                        if (PlayerService.playbackState == PlaybackStateCompat.STATE_PAUSED)
+                    tile.subtitle = getString(
+                        if (newState == PlaybackStateCompat.STATE_PAUSED)
                             R.string.paused
                         else R.string.stopped)
             }
-            qsTile.updateTile()
+            tile.updateTile()
         }
 
     override fun onStartListening() {

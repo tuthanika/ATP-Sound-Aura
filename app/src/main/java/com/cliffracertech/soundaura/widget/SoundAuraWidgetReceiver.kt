@@ -12,10 +12,26 @@ import com.cliffracertech.soundaura.settings.PrefKeys
 import com.cliffracertech.soundaura.settings.dataStore
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
+
+/** Launch an async BroadcastReceiver block on Dispatchers.IO.
+ * The CoroutineScope is cancelled automatically when the PendingResult finishes,
+ * preventing scope leaks on repeated widget interactions. */
+private fun BroadcastReceiver.goAsyncOnIO(
+    block: suspend CoroutineScope.() -> Unit
+) {
+    val pendingResult = goAsync()
+    val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    scope.launch {
+        try {
+            block()
+        } finally {
+            pendingResult.finish()
+            scope.cancel()
+        }
+    }
+}
  
 class SoundAuraWidgetReceiver : BroadcastReceiver() {
- 
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
  
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
@@ -25,38 +41,26 @@ class SoundAuraWidgetReceiver : BroadcastReceiver() {
                 SoundAuraWidget.sendAction(context, action)
             }
             SoundAuraWidget.ACTION_STOP -> {
-                val pendingResult = goAsync()
-                scope.launch {
-                    try {
-                        val application = context.applicationContext as SoundAuraApplication
-                        application.database.playlistDao().deactivateAll()
-                        
-                        // Stop the service and update UI
-                        SoundAuraWidget.sendAction(context, action)
-                        withContext(Dispatchers.Main) {
-                            SoundAuraWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
-                            PresetWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
-                        }
-                    } finally {
-                        pendingResult.finish()
+                goAsyncOnIO {
+                    val application = context.applicationContext as SoundAuraApplication
+                    application.database.playlistDao().deactivateAll()
+                    SoundAuraWidget.sendAction(context, action)
+                    withContext(Dispatchers.Main) {
+                        SoundAuraWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
+                        PresetWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
                     }
                 }
             }
             SoundAuraWidget.ACTION_TOGGLE_PLAYLIST -> {
                 val playlistId = intent.getLongExtra(SoundAuraWidget.EXTRA_PLAYLIST_ID, -1)
                 if (playlistId != -1L) {
-                    val pendingResult = goAsync()
-                    scope.launch {
-                        try {
-                            val application = context.applicationContext as SoundAuraApplication
-                            val playlistDao = application.database.playlistDao()
-                            playlistDao.toggleIsActive(playlistId)
-                            withContext(Dispatchers.Main) {
-                                SoundAuraWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
-                                PresetWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
-                            }
-                        } finally {
-                            pendingResult.finish()
+                    goAsyncOnIO {
+                        val application = context.applicationContext as SoundAuraApplication
+                        val playlistDao = application.database.playlistDao()
+                        playlistDao.toggleIsActive(playlistId)
+                        withContext(Dispatchers.Main) {
+                            SoundAuraWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
+                            PresetWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
                         }
                     }
                 }
@@ -68,64 +72,46 @@ class SoundAuraWidgetReceiver : BroadcastReceiver() {
             PresetWidget.ACTION_LOAD_PRESET -> {
                 val presetName = intent.getStringExtra(PresetWidget.EXTRA_PRESET_NAME)
                 if (presetName != null) {
-                    val pendingResult = goAsync()
-                    scope.launch {
-                        try {
-                            val application = context.applicationContext as SoundAuraApplication
-                            val presetDao = application.database.presetDao()
-                            presetDao.loadPreset(presetName)
-                            context.startService(PlayerService.playIntent(context))
-                            withContext(Dispatchers.Main) {
-                                SoundAuraWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
-                                PresetWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
-                            }
-                        } finally {
-                            pendingResult.finish()
+                    goAsyncOnIO {
+                        val application = context.applicationContext as SoundAuraApplication
+                        val presetDao = application.database.presetDao()
+                        presetDao.loadPreset(presetName)
+                        context.startService(PlayerService.playIntent(context))
+                        withContext(Dispatchers.Main) {
+                            SoundAuraWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
+                            PresetWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
                         }
                     }
                 }
             }
             SoundAuraWidget.ACTION_CYCLE_VOLUME -> {
-                val pendingResult = goAsync()
-                scope.launch {
-                    try {
-                        val volKey = floatPreferencesKey(PrefKeys.masterVolume)
-                        val current = context.dataStore.data.first()[volKey] ?: 1f
-                        
-                        // Cycle: 0 -> 0.25 -> 0.5 -> 0.75 -> 1.0 -> 0
-                        val next = when {
-                            current < 0.125f -> 0.25f
-                            current < 0.375f -> 0.50f
-                            current < 0.625f -> 0.75f
-                            current < 0.875f -> 1.00f
-                            else -> 0f
-                        }
-                        
-                        context.dataStore.edit(volKey, next)
-                        
-                        withContext(Dispatchers.Main) {
-                            SoundAuraWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
-                            PresetWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
-                        }
-                    } finally {
-                        pendingResult.finish()
+                goAsyncOnIO {
+                    val volKey = floatPreferencesKey(PrefKeys.masterVolume)
+                    val current = context.dataStore.data.first()[volKey] ?: 1f
+                    // Cycle: 0 -> 0.25 -> 0.5 -> 0.75 -> 1.0 -> 0
+                    val next = when {
+                        current < 0.125f -> 0.25f
+                        current < 0.375f -> 0.50f
+                        current < 0.625f -> 0.75f
+                        current < 0.875f -> 1.00f
+                        else            -> 0f
+                    }
+                    context.dataStore.edit(volKey, next)
+                    withContext(Dispatchers.Main) {
+                        SoundAuraWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
+                        PresetWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
                     }
                 }
             }
             SoundAuraWidget.ACTION_SET_VOLUME_LEVEL -> {
-                val volume = intent.getFloatExtra(SoundAuraWidget.EXTRA_VOLUME_LEVEL, 1f)
-                val pendingResult = goAsync()
-                scope.launch {
-                    try {
-                        val volKey = floatPreferencesKey(PrefKeys.masterVolume)
-                        context.dataStore.edit(volKey, volume)
-                        
-                        withContext(Dispatchers.Main) {
-                            SoundAuraWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
-                            PresetWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
-                        }
-                    } finally {
-                        pendingResult.finish()
+                // SEC-2: clamp incoming value to [0, 1] to prevent NaN / out-of-range injection
+                val volume = intent.getFloatExtra(SoundAuraWidget.EXTRA_VOLUME_LEVEL, 1f).coerceIn(0f, 1f)
+                goAsyncOnIO {
+                    val volKey = floatPreferencesKey(PrefKeys.masterVolume)
+                    context.dataStore.edit(volKey, volume)
+                    withContext(Dispatchers.Main) {
+                        SoundAuraWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
+                        PresetWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)
                     }
                 }
             }

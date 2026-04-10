@@ -14,6 +14,7 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import com.cliffracertech.soundaura.collectAsState
 import com.cliffracertech.soundaura.edit
 import com.cliffracertech.soundaura.preferenceFlow
@@ -110,12 +111,16 @@ class PlayerServicePlaybackState(
         PlayerService.binder?.setMasterVolume(volume)
         val scope = ProcessLifecycleOwner.get().lifecycleScope
         val masterVolumeKey = floatPreferencesKey(PrefKeys.masterVolume)
-        context.dataStore.edit(masterVolumeKey, volume, scope)
         
-        val updateIntent = Intent(context, SoundAuraWidgetReceiver::class.java).apply {
-            action = SoundAuraWidget.ACTION_UPDATE_WIDGET
+        scope.launch {
+            // Use suspending edit so it completes before broadcasting
+            context.dataStore.edit(masterVolumeKey, volume)
+            
+            val updateIntent = Intent(context, SoundAuraWidgetReceiver::class.java).apply {
+                action = SoundAuraWidget.ACTION_UPDATE_WIDGET
+            }
+            context.sendBroadcast(updateIntent)
         }
-        context.sendBroadcast(updateIntent)
     }
 }
 

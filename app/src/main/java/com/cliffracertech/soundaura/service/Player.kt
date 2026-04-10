@@ -87,20 +87,23 @@ class Player(
     ) {
         fadeJob?.cancel()
         fadeJob = scope.launch {
-            val startMultiplier = volumeFadeMultiplier
-            val diff = toMultiplier - startMultiplier
-            val steps = (duration / 20).toInt()
-            if (steps > 0) {
+            try {
+                val startMultiplier = volumeFadeMultiplier
+                val diff = toMultiplier - startMultiplier
+                val steps = (duration / 20).toInt()
                 for (i in 1..steps) {
                     delay(20)
                     volumeFadeMultiplier = startMultiplier + diff * (i.toFloat() / steps)
                     setVolume(playlist.volume)
                 }
+            } finally {
+                // Guarantee volume lands on target and onComplete always fires,
+                // even if the fade coroutine was cancelled mid-way.
+                volumeFadeMultiplier = toMultiplier
+                setVolume(playlist.volume)
+                withContext(NonCancellable) { onComplete() }
+                fadeJob = null
             }
-            volumeFadeMultiplier = toMultiplier
-            setVolume(playlist.volume)
-            onComplete()
-            fadeJob = null
         }
     }
 
@@ -119,8 +122,11 @@ class Player(
                 val trackVol = currentTrack?.volume ?: 1f
                 this.volume = volume * effectiveMultiplier * trackVol
             }
+        // BUG-4 fix: use getOrNull to avoid ArrayIndexOutOfBoundsException when
+        // exoPlayers.size temporarily diverges from playlist.tracks.size during reinit.
         } else exoPlayers.forEachIndexed { index, player ->
-            player.volume = volume * effectiveMultiplier * playlist.tracks[index].volume
+            val trackVol = playlist.tracks.getOrNull(index)?.volume ?: 1f
+            player.volume = volume * effectiveMultiplier * trackVol
         }
     }
 
@@ -133,6 +139,9 @@ class Player(
             newPlaylist.playSequentially != playlist.playSequentially ||
             tracksChanged
         ) {
+            // BUG-5 fix: assign playlist BEFORE initializing so that setVolume inside
+            // initializeExoPlayer works with the correct new playlist reference.
+            playlist = newPlaylist
             initializeExoPlayer(startImmediately, newPlaylist)
         } else {
             playlist = newPlaylist
@@ -141,7 +150,7 @@ class Player(
             applyVolumeBoost()
             exoPlayers.forEach { it.playWhenReady = startImmediately }
         }
-        playlist = newPlaylist
+        // Removed duplicate `playlist = newPlaylist` that was always executed (BUG-5)
     }
 
     val isPlaybackComplete get() =
