@@ -11,6 +11,8 @@ import com.cliffracertech.soundaura.model.database.TrackNamesValidator
 import com.cliffracertech.soundaura.model.database.newPlaylistNameValidator
 import kotlinx.coroutines.CoroutineScope
 import javax.inject.Inject
+import java.io.File
+import com.cliffracertech.soundaura.toAbsolutePathOrNull
 
 /** A container of methods that adds playlists (single track
  * or multi-track) to the app's library of playlists. */
@@ -42,6 +44,19 @@ class AddToLibraryUseCase(
         ): Result()
     }
 
+    private fun resolveUrisIfPossible(uris: List<Uri>): List<Uri> {
+        return uris.map { uri ->
+            val absolutePath = uri.toString().toAbsolutePathOrNull()
+            if (absolutePath != null) {
+                val file = File(absolutePath)
+                if (file.exists() && file.canRead()) {
+                    return@map Uri.fromFile(file)
+                }
+            }
+            uri
+        }
+    }
+
     /**
      * Attempt to add multiple single-track playlists. Each value in [names]
      * will be used as a name for a new [Playlist], while the [Uri] with the
@@ -54,11 +69,12 @@ class AddToLibraryUseCase(
         uris: List<Uri>,
     ): Result {
         assert(names.size == uris.size)
-        val newUris = dao.filterNewUris(uris)
+        val resolvedUris = resolveUrisIfPossible(uris)
+        val newUris = dao.filterNewUris(resolvedUris)
         val succeeded = permissionHandler.acquirePermissionsFor(newUris)
 
         return if (succeeded) {
-            dao.insertSingleTrackPlaylists(names, uris, newUris)
+            dao.insertSingleTrackPlaylists(names, resolvedUris, newUris)
             Result.Success
         } else Result.Failure(
             permissionsUsed = permissionHandler.usedAllowance,
@@ -86,11 +102,16 @@ class AddToLibraryUseCase(
         tracks: List<com.cliffracertech.soundaura.model.database.TrackWithVolume>,
         trackUris: List<Uri> = tracks.map { it.uri }
     ): Result {
-        val newUris = dao.filterNewUris(trackUris)
+        val resolvedUris = resolveUrisIfPossible(trackUris)
+        val resolvedTracks = tracks.mapIndexed { index, track -> 
+            track.copy(uri = resolvedUris[index])
+        }
+
+        val newUris = dao.filterNewUris(resolvedUris)
         val succeeded = permissionHandler.acquirePermissionsFor(newUris)
 
         return if (succeeded) {
-            dao.insertPlaylist(name, shuffle, playSequentially, tracks, newUris)
+            dao.insertPlaylist(name, shuffle, playSequentially, resolvedTracks, newUris)
             Result.Success
         } else Result.Failure(
             permissionsUsed = permissionHandler.usedAllowance,
