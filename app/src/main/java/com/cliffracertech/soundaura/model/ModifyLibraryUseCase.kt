@@ -9,6 +9,7 @@ import com.cliffracertech.soundaura.model.database.Playlist
 import com.cliffracertech.soundaura.model.database.PlaylistDao
 import com.cliffracertech.soundaura.model.database.Track
 import com.cliffracertech.soundaura.model.database.playlistRenameValidator
+import com.cliffracertech.soundaura.toAbsolutePathOrNull
 import kotlinx.coroutines.CoroutineScope
 import javax.inject.Inject
 
@@ -139,11 +140,20 @@ class ModifyLibraryUseCase(
     }
 
     suspend fun updateTrackUri(oldUri: Uri, newUri: Uri): Boolean {
-        if (oldUri == newUri) return true
+        var finalNewUri = newUri
+        val absolutePath = finalNewUri.toString().toAbsolutePathOrNull()
+        if (absolutePath != null) {
+            val file = java.io.File(absolutePath)
+            if (file.exists() && file.canRead()) {
+                finalNewUri = Uri.fromFile(file)
+            }
+        }
+
+        if (oldUri == finalNewUri) return true
         // We attempt to acquire permission, but don't fail if it's not possible
         // (e.g. if the URI is a child of a tree URI we already have permission for).
-        permissionHandler.acquirePermissionsFor(listOf(newUri))
-        dao.updateTrackUri(oldUri, newUri)
+        permissionHandler.acquirePermissionsFor(listOf(finalNewUri))
+        dao.updateTrackUri(oldUri, finalNewUri)
         permissionHandler.releasePermissionsFor(listOf(oldUri))
         return true
     }

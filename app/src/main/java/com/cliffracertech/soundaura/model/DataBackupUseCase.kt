@@ -288,16 +288,27 @@ class DataBackupUseCase @Inject constructor(
                 else -> null
             }
 
-            if (matchingFile != null && matchingFile.uri != track.uri) {
-                playlistDao.updateTrackUri(track.uri, matchingFile.uri)
-                playlistDao.setTrackHasError(matchingFile.uri, false)
-                oldUrisToRelease.add(track.uri)
-                newUrisToAcquire.add(matchingFile.uri)
-                relinkCount++
-            } else if (matchingFile != null && matchingFile.uri == track.uri && track.hasError) {
-                // Same URI but marked as error — just clear the error
-                playlistDao.setTrackHasError(track.uri, false)
-                relinkCount++
+            if (matchingFile != null) {
+                var finalNewUri = matchingFile.uri
+                val absolutePath = finalNewUri.toString().toAbsolutePathOrNull()
+                if (absolutePath != null) {
+                    val file = java.io.File(absolutePath)
+                    if (file.exists() && file.canRead()) {
+                        finalNewUri = Uri.fromFile(file)
+                    }
+                }
+
+                if (finalNewUri != track.uri) {
+                    playlistDao.updateTrackUri(track.uri, finalNewUri)
+                    playlistDao.setTrackHasError(finalNewUri, false)
+                    oldUrisToRelease.add(track.uri)
+                    newUrisToAcquire.add(finalNewUri)
+                    relinkCount++
+                } else if (track.hasError) {
+                    // Same URI but marked as error — just clear the error
+                    playlistDao.setTrackHasError(track.uri, false)
+                    relinkCount++
+                }
             }
         }
 
