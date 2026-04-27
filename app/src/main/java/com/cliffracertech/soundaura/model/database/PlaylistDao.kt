@@ -349,7 +349,11 @@ private const val librarySelectWithFilter =
 
     @Transaction
     open suspend fun updateTrackUri(oldUri: Uri, newUri: Uri) {
-        if (oldUri == newUri) return
+        if (oldUri == newUri) {
+            // URIs are the same, but we still need to clear a possible error state
+            setTrackHasError(oldUri, false)
+            return
+        }
         val existingNewTrack = getTrack(newUri)
         if (existingNewTrack == null) {
             val oldTrack = getTrack(oldUri) ?: return

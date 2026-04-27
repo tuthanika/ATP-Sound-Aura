@@ -149,12 +149,15 @@ class ModifyLibraryUseCase(
             }
         }
 
-        if (oldUri == finalNewUri) return true
         // We attempt to acquire permission, but don't fail if it's not possible
         // (e.g. if the URI is a child of a tree URI we already have permission for).
         permissionHandler.acquirePermissionsFor(listOf(finalNewUri))
+        // Always call dao.updateTrackUri even when the URI didn't change, so that
+        // a previously-set hasError flag is cleared (the user may be re-confirming
+        // the same path after the file became accessible again).
         dao.updateTrackUri(oldUri, finalNewUri)
-        permissionHandler.releasePermissionsFor(listOf(oldUri))
+        if (oldUri != finalNewUri)
+            permissionHandler.releasePermissionsFor(listOf(oldUri))
         return true
     }
 }
