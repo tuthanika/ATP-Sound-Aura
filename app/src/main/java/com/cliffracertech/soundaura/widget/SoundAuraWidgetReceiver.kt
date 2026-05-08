@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.cliffracertech.soundaura.SoundAuraApplication
 import com.cliffracertech.soundaura.edit
 import com.cliffracertech.soundaura.service.PlayerService
@@ -76,6 +77,9 @@ class SoundAuraWidgetReceiver : BroadcastReceiver() {
                         val application = context.applicationContext as SoundAuraApplication
                         val presetDao = application.database.presetDao()
                         presetDao.loadPreset(presetName)
+                        // Ghi activePresetName vào DataStore để Main UI đồng bộ
+                        val activePresetNameKey = stringPreferencesKey(PrefKeys.activePresetName)
+                        context.dataStore.edit(activePresetNameKey, presetName)
                         context.startService(PlayerService.playIntent(context))
                         withContext(Dispatchers.Main) {
                             SoundAuraWidget.sendAction(context, SoundAuraWidget.ACTION_UPDATE_WIDGET)

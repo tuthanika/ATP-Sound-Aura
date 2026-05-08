@@ -12,6 +12,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.content.Context
+import android.content.Intent
 import com.cliffracertech.soundaura.Dispatcher
 import com.cliffracertech.soundaura.R
 import com.cliffracertech.soundaura.collectAsState
@@ -28,7 +30,10 @@ import com.cliffracertech.soundaura.model.database.PresetDao
 import com.cliffracertech.soundaura.model.database.presetRenameValidator
 import com.cliffracertech.soundaura.preferenceState
 import com.cliffracertech.soundaura.settings.PrefKeys
+import com.cliffracertech.soundaura.widget.SoundAuraWidget
+import com.cliffracertech.soundaura.widget.SoundAuraWidgetReceiver
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.plus
@@ -47,6 +52,7 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class MediaControllerViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val presetDao: PresetDao,
     private val navigationState: NavigationState,
     private val playbackState: PlaybackState,
@@ -199,6 +205,11 @@ class MediaControllerViewModel @Inject constructor(
         scope.launchIO {
             activePresetState.setName(presetName)
             presetDao.loadPreset(presetName)
+            // Broadcast widget update để đồng bộ tên preset đang phát
+            val updateIntent = Intent(context, SoundAuraWidgetReceiver::class.java).apply {
+                action = SoundAuraWidget.ACTION_UPDATE_WIDGET
+            }
+            context.sendBroadcast(updateIntent)
             withContext(Dispatcher.Immediate) { navigationState.hidePresetSelector() }
         }
     }
