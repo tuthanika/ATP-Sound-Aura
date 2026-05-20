@@ -50,6 +50,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -115,7 +117,14 @@ class PlayerService: LifecycleService() {
         context = this,
         scope = lifecycleScope,
         onPlaybackFailure = { problemUris ->
-            lifecycleScope.launch { playlistDao.setTracksHaveError(problemUris) }
+            lifecycleScope.launch {
+                val trueErrors = withContext(Dispatchers.IO) {
+                    problemUris.filter { !isUriReadable(it) }
+                }
+                if (trueErrors.isNotEmpty()) {
+                    playlistDao.setTracksHaveError(trueErrors)
+                }
+            }
         },
         onAllPlaybackComplete = {
             lifecycleScope.launch {
@@ -362,6 +371,17 @@ class PlayerService: LifecycleService() {
         val stringResId = R.string.player_no_active_playlists_warning_message
         lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Main) {
             Toast.makeText(this@PlayerService, stringResId, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun isUriReadable(uri: Uri): Boolean {
+        return try {
+            val inputStream = contentResolver.openInputStream(uri)
+            val readable = inputStream != null
+            inputStream?.close()
+            readable
+        } catch (e: Exception) {
+            false
         }
     }
 
