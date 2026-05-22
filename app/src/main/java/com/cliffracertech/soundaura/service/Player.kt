@@ -46,6 +46,10 @@ class Player(
     private var volumeFadeMultiplier = if (startImmediately) 0f else 1f
     private var volumeMultiplier = 1f
     private var fadeJob: Job? = null
+    // Guards against stale onPlayerError callbacks firing after release() or after
+    // initializeExoPlayer() recreates a new set of ExoPlayers.
+    private var isReleased = false
+    private var activeGeneration = 0
     var masterVolume = masterVolume
         set(value) {
             field = value
@@ -157,6 +161,11 @@ class Player(
         exoPlayers.isNotEmpty() && exoPlayers.all { it.playbackState == ExoPlayerState.STATE_ENDED }
 
     fun release() {
+        // Set isReleased BEFORE releasing ExoPlayers so that any pending
+        // onPlayerError callbacks queued in the main thread Handler are
+        // ignored. This prevents a false error-state write to the DB when
+        // the service is stopped/crashes while a track is playing.
+        isReleased = true
         fadeJob?.cancel()
         volumeBoosters.forEach { 
             try { it.enabled = false; it.release() } 
@@ -164,6 +173,7 @@ class Player(
         }
         volumeBoosters = emptyList()
         exoPlayers.forEach(ExoPlayer::release)
+        exoPlayers = emptyList()
     }
 
     private fun initializeExoPlayer(
@@ -177,11 +187,19 @@ class Player(
             catch (e: Exception) { /* already released */ }
         }
         volumeBoosters = emptyList()
-        exoPlayers.forEach(ExoPlayer::release)
+
+        // Bump the generation counter and clear exoPlayers BEFORE releasing old
+        // players. Any onPlayerError callbacks already queued in the Handler for
+        // those old players will see a stale generation and will be silently
+        // dropped, preventing false error-state DB writes on reinit.
+        val oldPlayers = exoPlayers
+        activeGeneration++
+        val myGeneration = activeGeneration
+        exoPlayers = emptyList()
+        oldPlayers.forEach(ExoPlayer::release)
 
         val tracks = sourcePlaylist.tracks
         if (tracks.isEmpty()) {
-            exoPlayers = emptyList()
             onPlaybackFailure(emptyList())
             return
         }
@@ -191,15 +209,6 @@ class Player(
                 setMediaItems(sourcePlaylist.trackUris.map(MediaItem::fromUri))
                 repeatMode = ExoPlayerState.REPEAT_MODE_ALL
                 shuffleModeEnabled = sourcePlaylist.shuffle
-                // Sequential playback uses the playlist volume as the base
-                // for all tracks; per-track volume is not used for sequential
-                // playback because it might be confusing if the volume jumps
-                // between tracks in a single playlist.
-                // However, the user request says "volume các sound trong 1 playlist là cấp 3"
-                // which might imply it should apply to sequential too.
-                // Let's check the current item index if possible, but ExoPlayer.volume is per player.
-                // To support per-track volume in sequential playback, we'd need to update
-                // the volume on each media item transition.
                 val updateSequentialVolume = {
                     val currentTrack = currentMediaItemIndex.let { 
                         if (it in tracks.indices) tracks[it] else null
@@ -215,8 +224,10 @@ class Player(
                     override fun onPlaybackStateChanged(playbackState: Int) {
                         notifyPlaybackCompleteIfNeeded()
                     }
-
                     override fun onPlayerError(error: PlaybackException) {
+                        // Guard: ignore if this Player was released or if these
+                        // ExoPlayers have been replaced by a newer generation.
+                        if (isReleased || activeGeneration != myGeneration) return
                         val failed = currentMediaItem?.localConfiguration?.uri
                         onPlaybackFailure(if (failed == null) sourcePlaylist.trackUris else listOf(failed))
                     }
@@ -235,8 +246,10 @@ class Player(
                     override fun onPlaybackStateChanged(playbackState: Int) {
                         notifyPlaybackCompleteIfNeeded()
                     }
-
                     override fun onPlayerError(error: PlaybackException) {
+                        // Guard: ignore if this Player was released or if these
+                        // ExoPlayers have been replaced by a newer generation.
+                        if (isReleased || activeGeneration != myGeneration) return
                         onPlaybackFailure(listOf(track.uri))
                     }
                 })
