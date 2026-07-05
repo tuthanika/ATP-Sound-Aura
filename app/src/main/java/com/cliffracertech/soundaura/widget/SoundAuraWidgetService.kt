@@ -26,7 +26,8 @@ class SoundAuraWidgetService : LifecycleService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        return START_STICKY
+        // START_NOT_STICKY: do not auto-restart; this service is started on-demand by widget updates only.
+        return START_NOT_STICKY
     }
 
     override fun onBind(intent: Intent): IBinder? {

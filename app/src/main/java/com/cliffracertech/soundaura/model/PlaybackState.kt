@@ -106,13 +106,19 @@ class PlayerServicePlaybackState(
         PlayerService.binder?.setPlaylistVolume(playlistId, volume)
     }
 
+    // Tracks the most recently launched coroutine for persisting master volume.
+    // Cancelled before launching a new one to avoid accumulating stale jobs when
+    // the user moves the volume slider quickly.
+    private var masterVolumeJob: kotlinx.coroutines.Job? = null
+
     override fun setMasterVolume(volume: Float) {
         _masterVolume = volume
         PlayerService.binder?.setMasterVolume(volume)
         val scope = ProcessLifecycleOwner.get().lifecycleScope
         val masterVolumeKey = floatPreferencesKey(PrefKeys.masterVolume)
-        
-        scope.launch {
+
+        masterVolumeJob?.cancel() // Cancel any in-flight persist before launching a new one
+        masterVolumeJob = scope.launch {
             // Use suspending edit so it completes before broadcasting
             context.dataStore.edit(masterVolumeKey, volume)
             

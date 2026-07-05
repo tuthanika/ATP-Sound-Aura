@@ -184,6 +184,8 @@ class PlayerNotification(
         // reappear in the correct location.
         service.stopForeground(STOP_FOREGROUND_REMOVE)
         mediaSession?.isActive = false
+        mediaSession?.release() // Release native resources before reassigning to prevent MediaSession leak
+        mediaSession = null     // Explicitly null out before reassigning below
 
         notificationStyle = androidx.media.app.NotificationCompat.MediaStyle()
         mediaSession = if (!useMediaSession) null else

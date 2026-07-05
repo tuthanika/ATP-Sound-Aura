@@ -62,10 +62,24 @@ object SoundAuraWidgetViews {
 
         // CONTAR PLAYLISTS ACTIVAS
         val application = context.applicationContext as com.cliffracertech.soundaura.SoundAuraApplication
-        val activeCount = runBlocking { 
-            application.database.playlistDao().getPlaylistsForWidget().count { it.isActive }
+        val masterVolumeKey = floatPreferencesKey(PrefKeys.masterVolume)
+        val isSliderVisibleKey = booleanPreferencesKey(PrefKeys.isVolumeSliderVisible)
+
+        // Consolidate all blocking I/O into a single runBlocking call to minimize
+        // the number of DataStore/Room connections opened per widget update.
+        val (activeCount, masterVolume, isSliderVisible) = runBlocking {
+            val count = application.database.playlistDao().getPlaylistsForWidget().count { it.isActive }
+            // Read both DataStore preferences in one snapshot to avoid creating two separate collectors.
+            val prefs = context.dataStore.data.first()
+            val volume = prefs[masterVolumeKey] ?: 1f
+            val sliderVisible = prefs[isSliderVisibleKey] ?: false
+            Triple(count, volume, sliderVisible)
         }
 
+        val percentage = (masterVolume * 100).toInt()
+        views.setTextViewText(R.id.widget_master_volume_text, "$percentage%")
+
+        // Actualizar nombre de playlist / conteo activas
         val playlistName = if (isPlaying || isPaused) {
             if (activeCount > 0) "${context.getString(R.string.app_name)} ($activeCount)"
             else context.getString(R.string.app_name)
@@ -78,15 +92,6 @@ object SoundAuraWidgetViews {
         val showStopButton = PlayerService.playbackState != PlaybackStateCompat.STATE_STOPPED
         views.setViewVisibility(R.id.widget_stop,
             if (showStopButton) android.view.View.VISIBLE else android.view.View.GONE)
-
-        // Leer volumen y visibilidad del slider
-        val masterVolumeKey = floatPreferencesKey(PrefKeys.masterVolume)
-        val isSliderVisibleKey = booleanPreferencesKey(PrefKeys.isVolumeSliderVisible)
-        val masterVolume = runBlocking { context.dataStore.data.first()[masterVolumeKey] ?: 1f }
-        val isSliderVisible = runBlocking { context.dataStore.data.first()[isSliderVisibleKey] ?: false }
-
-        val percentage = (masterVolume * 100).toInt()
-        views.setTextViewText(R.id.widget_master_volume_text, "$percentage%")
 
         // CICLO DE VOLUMEN
         val cycleVolumeIntent = Intent(context, SoundAuraWidgetReceiver::class.java).apply {
