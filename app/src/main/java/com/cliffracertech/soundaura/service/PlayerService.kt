@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
@@ -112,6 +113,8 @@ class PlayerService: LifecycleService() {
     private var autoStopJob: Job? = null
     private var stopSelfJob: Job? = null  // BUG-11: tracked separately so it can be cancelled on resume
     private var stopTime by mutableStateOf<Instant?>(null)
+    private var activePlaylistNames: List<String> = emptyList()
+    private var currentMasterVolume: Float = 1f
 
     private val playerMap = PlayerMap(
         context = this,
@@ -135,6 +138,8 @@ class PlayerService: LifecycleService() {
     private var playerMapIsInitialized = false
 
     private fun updateNotification() = notification.update(playbackState, stopTime)
+    private fun updateNotificationWithCurrentState() =
+        notification.update(playbackState, stopTime, activePlaylistNames, currentMasterVolume)
 
     private var playInBackground = false
         set(value) {
@@ -178,8 +183,11 @@ class PlayerService: LifecycleService() {
             pauseIntent = pauseIntent(this),
             stopIntent = stopIntent(this),
             cancelTimerIntent = setTimerIntent(this, null),
+            cycleVolumeIntent = cycleVolumeIntent(this),
             playbackState = playbackState,
             stopTime = stopTime,
+            activePlaylistNames = emptyList(),
+            masterVolume = 1f,
             useMediaSession = true)
 
         lifecycleScope.launch {
@@ -200,9 +208,19 @@ class PlayerService: LifecycleService() {
 
             val masterVolumeKey = floatPreferencesKey(PrefKeys.masterVolume)
             dataStore.preferenceFlow(masterVolumeKey, 1f)
-                .onEach { 
-                    playerMap.setMasterVolume(it)
+                .onEach { vol ->
+                    currentMasterVolume = vol
+                    playerMap.setMasterVolume(vol)
+                    notification.update(playbackState, stopTime,
+                        activePlaylistNames, currentMasterVolume)
                     SoundAuraWidget.sendAction(this@PlayerService, SoundAuraWidget.ACTION_UPDATE_WIDGET)
+                }.launchIn(this)
+
+            playlistDao.getActivePlaylistNames()
+                .onEach { names ->
+                    activePlaylistNames = names
+                    notification.update(playbackState, stopTime,
+                        activePlaylistNames, currentMasterVolume)
                 }.launchIn(this)
 
             playlistDao.getActivePlaylistsAndTracks()
@@ -234,6 +252,21 @@ class PlayerService: LifecycleService() {
             } setTimerAction -> {
                 val stopTime = intent.getLongExtra(setTimerAction, 0L)
                 setStopTime(if (stopTime == 0L) null else stopTime)
+            } cycleVolumeAction -> {
+                lifecycleScope.launch {
+                    val volKey = floatPreferencesKey(PrefKeys.masterVolume)
+                    val current = dataStore.data.first()[volKey] ?: 1f
+                    val next = when {
+                        current < 0.125f -> 0.25f
+                        current < 0.375f -> 0.50f
+                        current < 0.625f -> 0.75f
+                        current < 0.875f -> 1.00f
+                        else             -> 0f
+                    }
+                    dataStore.edit { prefs -> prefs[volKey] = next }
+                    // setMasterVolume will update the notification and widget
+                    setMasterVolume(next)
+                }
             }
         }
         return super.onStartCommand(intent, flags, startId)
@@ -389,7 +422,10 @@ class PlayerService: LifecycleService() {
         playerMap.setPlayerVolume(playlistId, volume)
 
     fun setMasterVolume(volume: Float) {
+        currentMasterVolume = volume
         playerMap.setMasterVolume(volume)
+        // Update notification to reflect new volume
+        notification.update(playbackState, stopTime, activePlaylistNames, currentMasterVolume)
         // BUG-3 fix: add FLAG_RECEIVER_FOREGROUND so the widget updates reliably in Doze Mode,
         // consistent with the same flag already used in setPlaybackState.
         val intent = Intent(this, SoundAuraWidgetReceiver::class.java).apply {
@@ -496,6 +532,7 @@ class PlayerService: LifecycleService() {
         private const val autoPauseAudioFocusLossKey = "auto_pause_audio_focus_loss"
         private const val setPlaybackAction = "com.cliffracertech.soundaura.action.setPlayback"
         private const val setTimerAction = "com.cliffracertech.soundaura.action.setTimer"
+        private const val cycleVolumeAction = "com.cliffracertech.soundaura.action.cycleVolume"
 
         private fun setPlaybackIntent(context: Context, state: Int) =
             Intent(context, PlayerService::class.java)
@@ -505,6 +542,11 @@ class PlayerService: LifecycleService() {
         fun playIntent(context: Context) = setPlaybackIntent(context, STATE_PLAYING)
         fun pauseIntent(context: Context) = setPlaybackIntent(context, STATE_PAUSED)
         fun stopIntent(context: Context) = setPlaybackIntent(context, STATE_STOPPED)
+
+        /** Create an intent that will cycle the master volume through preset levels. */
+        fun cycleVolumeIntent(context: Context) =
+            Intent(context, PlayerService::class.java)
+                .setAction(cycleVolumeAction)
 
         /** Create an intent that will set the service's auto-stop timer such
          * that playback will stop after [duration] elapses. A [duration] of

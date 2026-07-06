@@ -34,13 +34,14 @@ import java.time.Instant
  *
  * PlayerNotification can post a notification for a foreground media playing
  * service that contains a string describing a playback state (e.g. playing,
- * paused), a toggle play/pause action, and a stop action. Using the values
+ * paused), a toggle play/pause action, a stop action, and optionally a
+ * volume cycle action and active playlist information. Using the values
  * of [playbackState] and [stopTime] that are provided in its constructor,
  * PlayerNotification will automatically call [Service.startForeground] for
  * the client service during creation. PlayerNotification should be notified
- * of changes to the playback state or the auto stop time afterwards via the
- * method [update]. The notification can be cleared when the service is
- * stopping with the function [remove].
+ * of changes to the playback state, auto stop time, active playlists, or
+ * master volume afterwards via the method [update]. The notification can
+ * be cleared when the service is stopping with the function [remove].
 
  * @param service The foreground media playing service that PlayerNotification
  *     is serving. Note that this reference to the service is held onto for
@@ -54,12 +55,18 @@ import java.time.Instant
  *     PlayerNotification is serving to stop its playback.
  * @param cancelTimerIntent The intent that, when fired, will cause the
  *     cancellation of the current stop timer
+ * @param cycleVolumeIntent The intent that, when fired, will cycle the master
+ *     volume through preset levels (0 → 25% → 50% → 75% → 100% → 0).
  * @param playbackState The initial playback state that will be displayed
  *     in the notification. playbackState can be changed after creation by
  *     passing the new value to the method update.
  * @param stopTime The time at which playback will be automatically stopped,
  *     if any. The duration between now and the stop time will be calculated
  *     and displayed in the notification.
+ * @param activePlaylistNames The names of the currently active playlists.
+ *     Used to build a label shown in the notification sub-text.
+ * @param masterVolume The initial master volume (0..1). Shown as a percentage
+ *     in the notification and used to pick the correct volume icon.
  * @param useMediaSession Whether or not a [MediaSessionCompat] instance should
  *     be tied to the notification. If true, the notification will appear in
  *     the media session section of the status bar. If false, the notification
@@ -72,14 +79,18 @@ class PlayerNotification(
     private val pauseIntent: Intent,
     private val stopIntent: Intent,
     private val cancelTimerIntent: Intent,
+    private val cycleVolumeIntent: Intent,
     private var playbackState: Int,
     stopTime: Instant?,
+    activePlaylistNames: List<String>,
+    masterVolume: Float,
     useMediaSession: Boolean
 ) {
     private val playActionRequestCode = 1
     private val pauseActionRequestCode = 2
     private val stopActionRequestCode = 3
     private val cancelTimerRequestCode = 4
+    private val cycleVolumeRequestCode = 5
     private val notificationId get() = if (useMediaSession) 1 else 2
     private val notificationManager =
         service.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
@@ -90,6 +101,8 @@ class PlayerNotification(
     private var stopTime: Instant? = stopTime
     private var timeUntilStop: Duration? =
         stopTime?.let { Duration.between(Instant.now(), it) }
+    private var activePlaylistNames: List<String> = activePlaylistNames
+    private var masterVolume: Float = masterVolume
 
     private var backgroundBitmap: android.graphics.Bitmap? = null
 
@@ -173,6 +186,20 @@ class PlayerNotification(
             service, cancelTimerRequestCode, cancelTimerIntent,
             FLAG_IMMUTABLE or FLAG_UPDATE_CURRENT))
 
+    /** Build a volume cycle action whose icon and label reflect the current [masterVolume]. */
+    private fun buildVolumeAction(): NotificationCompat.Action {
+        val volumePct = (masterVolume * 100).toInt()
+        val icon = if (masterVolume < 0.01f)
+            R.drawable.ic_baseline_volume_off_24
+        else
+            R.drawable.ic_baseline_volume_up_24
+        val label = service.getString(R.string.notification_volume_action, volumePct)
+        val pendingIntent = PendingIntent.getService(
+            service, cycleVolumeRequestCode, cycleVolumeIntent,
+            FLAG_IMMUTABLE or FLAG_UPDATE_CURRENT)
+        return NotificationCompat.Action(icon, label, pendingIntent)
+    }
+
     init {
         rebuildMediaStyleAndNotificationBuilder()
     }
@@ -225,9 +252,16 @@ class PlayerNotification(
         mediaSession?.release()
     }
 
-    fun update(playbackState: Int, stopTime: Instant?) {
+    fun update(
+        playbackState: Int,
+        stopTime: Instant?,
+        activePlaylistNames: List<String> = this.activePlaylistNames,
+        masterVolume: Float = this.masterVolume,
+    ) {
         this.playbackState = playbackState
         this.stopTime = stopTime
+        this.activePlaylistNames = activePlaylistNames
+        this.masterVolume = masterVolume
 
         timeUntilStop = stopTime?.let { Duration.between(Instant.now(), it) }
         updateTimeLeftJob?.cancel()
@@ -243,21 +277,33 @@ class PlayerNotification(
                         // Simply clear the timer and break; the caller (PlayerService) will
                         // call setPlaybackState(STOPPED) which triggers update() correctly.
                         timeUntilStop = null
-                        val notification = notificationBuilder.updateText(null).build()
+                        val notification = updatedNotification(this@PlayerNotification.playbackState, null)
                         notificationManager.notify(notificationId, notification)
                         break
                     }
                     timeUntilStop = Duration.between(now, stopTimeCopy)
-                    val notification = notificationBuilder
-                        .updateText(timeUntilStop).build()
+                    val notification = updatedNotification(this@PlayerNotification.playbackState, timeUntilStop)
                     notificationManager.notify(notificationId, notification)
                 }
             }
+
 
         val notification = updatedNotification(playbackState, timeUntilStop)
         notificationManager.notify(notificationId, notification)
         mediaSession?.setPlaybackState(updatedPlaybackState(playbackState))
         mediaSession?.setMetadata(updatedMetadata(playbackState))
+    }
+
+    /** Build a compact subtitle string combining playlist info and volume. */
+    private fun buildSubText(): String {
+        val playlistPart = when (activePlaylistNames.size) {
+            0    -> service.getString(R.string.notification_no_active_playlists)
+            1    -> activePlaylistNames[0]
+            else -> service.getString(
+                R.string.notification_active_playlists_count, activePlaylistNames.size)
+        }
+        val volumePct = (masterVolume * 100).toInt()
+        return "$playlistPart  •  🔊 $volumePct%"
     }
 
     private fun NotificationCompat.Builder.updateText(
@@ -269,6 +315,8 @@ class PlayerNotification(
             else ->          R.string.stopped
         })
         setContentTitle(stateString)
+        // Always show playlist info + volume as sub-text (visible in expanded notification)
+        setSubText(buildSubText())
 
         // Starting with API level 33, the media controls use a text
         // animation that looks really bad with the timer countdown.
@@ -290,15 +338,15 @@ class PlayerNotification(
 
         builder.addAction(togglePlayPauseAction(
             isPlaying = playbackState == STATE_PLAYING))
+        // Action index 1: volume cycle (tap icon to cycle volume)
+        builder.addAction(buildVolumeAction())
         builder.addAction(stopAction)
         if (timeUntilStop != null)
             builder.addAction(cancelTimerAction)
 
-        // We only show a maximum of two actions in the compact
-        // view to prevent the actions from clipping the text
-        if (timeUntilStop != null)
-            notificationStyle.setShowActionsInCompactView(0, 1)
-        else notificationStyle.setShowActionsInCompactView(0)
+        // Compact view: show play/pause (0) and volume (1)
+        // Timer action is only shown in expanded view to keep compact view clean
+        notificationStyle.setShowActionsInCompactView(0, 1)
 
         return builder.build()
     }
@@ -315,10 +363,20 @@ class PlayerNotification(
             STATE_PAUSED ->  R.string.paused
             else ->          R.string.stopped
         })
+        // Show playlist info as the media album or artist field so it appears
+        // in the media session card on older Android versions.
+        val playlistLabel = when (activePlaylistNames.size) {
+            0    -> service.getString(R.string.notification_no_active_playlists)
+            1    -> activePlaylistNames[0]
+            else -> service.getString(
+                R.string.notification_active_playlists_count, activePlaylistNames.size)
+        }
+        val volumePct = (masterVolume * 100).toInt()
+        val artistLabel = "$stateString  •  $playlistLabel  •  🔊 $volumePct%"
         return MediaMetadataCompat.Builder()
             .putBitmap(METADATA_KEY_ART, backgroundBitmap)
             .putString(METADATA_KEY_TITLE, service.getString(R.string.app_name))
-            .putString(METADATA_KEY_ARTIST, stateString)
+            .putString(METADATA_KEY_ARTIST, artistLabel)
             .build()
     }
 }

@@ -205,6 +205,10 @@
     <string name="stop_timer_click_label">Cancel auto stop timer</string>
     <string name="stop_timer_description">Stopping in %1$s</string>
     <string name="cancel_stop_timer_action">Cancel stop timer</string>
+    <string name="notification_volume_action">Volume: %1$d%%</string>
+    <string name="notification_active_playlists_one">%1$s</string>
+    <string name="notification_active_playlists_count">%1$d active tracks</string>
+    <string name="notification_no_active_playlists">No active tracks</string>
     <string name="cancel_stop_timer_dialog_title">Confirm timer cancellation</string>
     <string name="cancel_stop_timer_dialog_text">
         Are you sure you would like to cancel the auto stop timer?</string>

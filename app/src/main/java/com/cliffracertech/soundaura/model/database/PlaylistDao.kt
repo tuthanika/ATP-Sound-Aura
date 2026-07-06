@@ -366,6 +366,10 @@ private const val librarySelectWithFilter =
             deleteTrack(oldUri)
     }
 
+    /** Return a [Flow] that updates with the list of names of all active playlists. */
+    @Query("SELECT name FROM playlist WHERE isActive ORDER BY name COLLATE NOCASE ASC")
+    abstract fun getActivePlaylistNames(): Flow<List<String>>
+
     // --- METHOD FOR THE WIDGET ---
     @Query("""
         SELECT id, name, shuffle, playSequentially, isActive,
