@@ -102,6 +102,7 @@ class PlayerNotification(
     private var timeUntilStop: Duration? =
         stopTime?.let { Duration.between(Instant.now(), it) }
     private var activePlaylistNames: List<String> = activePlaylistNames
+    private var presetName: String? = null
     private var masterVolume: Float = masterVolume
 
     private var backgroundBitmap: android.graphics.Bitmap? = null
@@ -256,11 +257,13 @@ class PlayerNotification(
         playbackState: Int,
         stopTime: Instant?,
         activePlaylistNames: List<String> = this.activePlaylistNames,
+        presetName: String? = this.presetName,
         masterVolume: Float = this.masterVolume,
     ) {
         this.playbackState = playbackState
         this.stopTime = stopTime
         this.activePlaylistNames = activePlaylistNames
+        this.presetName = presetName
         this.masterVolume = masterVolume
 
         timeUntilStop = stopTime?.let { Duration.between(Instant.now(), it) }
@@ -294,13 +297,27 @@ class PlayerNotification(
         mediaSession?.setMetadata(updatedMetadata(playbackState))
     }
 
-    /** Build a compact subtitle string combining playlist info and volume. */
+    /** Build a compact subtitle string combining playlist/preset info and volume.
+     *
+     * Format:
+     * - Preset active → "PresetName (N)  •  🔊 75%"
+     * - No preset, 1 track → "TrackName  •  🔊 75%"
+     * - No preset, N tracks → "N active tracks  •  🔊 75%"
+     * - Nothing active → "No active tracks  •  🔊 75%"
+     */
     private fun buildSubText(): String {
-        val playlistPart = when (activePlaylistNames.size) {
-            0    -> service.getString(R.string.notification_no_active_playlists)
-            1    -> activePlaylistNames[0]
-            else -> service.getString(
-                R.string.notification_active_playlists_count, activePlaylistNames.size)
+        val count = activePlaylistNames.size
+        val playlistPart = when {
+            presetName != null && count > 0 ->
+                "$presetName ($count)"
+            presetName != null && count == 0 ->
+                presetName!!  // preset loaded but nothing active yet
+            count == 0 ->
+                service.getString(R.string.notification_no_active_playlists)
+            count == 1 ->
+                activePlaylistNames[0]
+            else ->
+                service.getString(R.string.notification_active_playlists_count, count)
         }
         val volumePct = (masterVolume * 100).toInt()
         return "$playlistPart  •  🔊 $volumePct%"
@@ -363,13 +380,16 @@ class PlayerNotification(
             STATE_PAUSED ->  R.string.paused
             else ->          R.string.stopped
         })
-        // Show playlist info as the media album or artist field so it appears
+        // Show preset/playlist info as the artist field so it appears
         // in the media session card on older Android versions.
-        val playlistLabel = when (activePlaylistNames.size) {
-            0    -> service.getString(R.string.notification_no_active_playlists)
-            1    -> activePlaylistNames[0]
+        val count = activePlaylistNames.size
+        val playlistLabel = when {
+            presetName != null && count > 0 -> "$presetName ($count)"
+            presetName != null              -> presetName!!
+            count == 0 -> service.getString(R.string.notification_no_active_playlists)
+            count == 1 -> activePlaylistNames[0]
             else -> service.getString(
-                R.string.notification_active_playlists_count, activePlaylistNames.size)
+                R.string.notification_active_playlists_count, count)
         }
         val volumePct = (masterVolume * 100).toInt()
         val artistLabel = "$stateString  •  $playlistLabel  •  🔊 $volumePct%"

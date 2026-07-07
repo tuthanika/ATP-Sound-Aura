@@ -49,6 +49,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
@@ -114,6 +115,7 @@ class PlayerService: LifecycleService() {
     private var stopSelfJob: Job? = null  // BUG-11: tracked separately so it can be cancelled on resume
     private var stopTime by mutableStateOf<Instant?>(null)
     private var activePlaylistNames: List<String> = emptyList()
+    private var currentPresetName: String? = null
     private var currentMasterVolume: Float = 1f
 
     private val playerMap = PlayerMap(
@@ -139,7 +141,8 @@ class PlayerService: LifecycleService() {
 
     private fun updateNotification() = notification.update(playbackState, stopTime)
     private fun updateNotificationWithCurrentState() =
-        notification.update(playbackState, stopTime, activePlaylistNames, currentMasterVolume)
+        notification.update(playbackState, stopTime, activePlaylistNames,
+            currentPresetName, currentMasterVolume)
 
     private var playInBackground = false
         set(value) {
@@ -212,15 +215,26 @@ class PlayerService: LifecycleService() {
                     currentMasterVolume = vol
                     playerMap.setMasterVolume(vol)
                     notification.update(playbackState, stopTime,
-                        activePlaylistNames, currentMasterVolume)
+                        activePlaylistNames, currentPresetName, currentMasterVolume)
                     SoundAuraWidget.sendAction(this@PlayerService, SoundAuraWidget.ACTION_UPDATE_WIDGET)
                 }.launchIn(this)
+
+            val activePresetNameKey = androidx.datastore.preferences.core.stringPreferencesKey(
+                PrefKeys.activePresetName)
+            dataStore.data
+                .map { prefs -> prefs[activePresetNameKey] }
+                .onEach { presetName ->
+                    currentPresetName = presetName
+                    notification.update(playbackState, stopTime,
+                        activePlaylistNames, currentPresetName, currentMasterVolume)
+                }.launchIn(this)
+
 
             playlistDao.getActivePlaylistNames()
                 .onEach { names ->
                     activePlaylistNames = names
                     notification.update(playbackState, stopTime,
-                        activePlaylistNames, currentMasterVolume)
+                        activePlaylistNames, currentPresetName, currentMasterVolume)
                 }.launchIn(this)
 
             playlistDao.getActivePlaylistsAndTracks()
@@ -264,7 +278,7 @@ class PlayerService: LifecycleService() {
                         else             -> 0f
                     }
                     dataStore.edit { prefs -> prefs[volKey] = next }
-                    // setMasterVolume will update the notification and widget
+                    // setMasterVolume will update the notification (with preset name) and widget
                     setMasterVolume(next)
                 }
             }
@@ -425,7 +439,8 @@ class PlayerService: LifecycleService() {
         currentMasterVolume = volume
         playerMap.setMasterVolume(volume)
         // Update notification to reflect new volume
-        notification.update(playbackState, stopTime, activePlaylistNames, currentMasterVolume)
+        notification.update(playbackState, stopTime, activePlaylistNames,
+            currentPresetName, currentMasterVolume)
         // BUG-3 fix: add FLAG_RECEIVER_FOREGROUND so the widget updates reliably in Doze Mode,
         // consistent with the same flag already used in setPlaybackState.
         val intent = Intent(this, SoundAuraWidgetReceiver::class.java).apply {
